@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個人交易追蹤系統 - Google 雲端整合版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+        
+        :root { font-size: 18px; }
+        
+        body { 
+            font-family: 'Noto Sans TC', sans-serif; 
+            line-height: 1.6; 
+            background-color: #020617;
+            color: #f1f5f9;
+        }
+
+        .card-stock { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); }
+        .card-gold { background: linear-gradient(135deg, #78350f 0%, #b45309 100%); }
+        .card-strategy { background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%); }
+        
+        .glass-effect { 
+            background: rgba(15, 23, 42, 0.95); 
+            backdrop-filter: blur(20px); 
+            border-bottom: 2px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .page-transition { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .form-input { 
+            @apply w-full px-5 py-3.5 rounded-2xl border-2 border-slate-300 bg-white transition-all text-lg font-medium;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            color: #000000 !important;
+        }
+        .form-input::placeholder { @apply text-slate-400; }
+        .form-input:focus { @apply border-blue-500 ring-4 ring-blue-500/20 outline-none; }
+        .form-label { @apply block text-base font-black text-slate-200 mb-2.5; }
+        
+        .checkbox-card { @apply flex items-center gap-4 p-4 rounded-2xl border-2 border-slate-800 bg-slate-900/60 cursor-pointer hover:bg-slate-800 transition-all; }
+        .checkbox-card input { @apply w-6 h-6 text-blue-600 rounded-lg focus:ring-blue-500 bg-slate-950 border-slate-600; }
+
+        .rank-gold { @apply bg-amber-900/50 text-amber-400 border-amber-800; }
+        .rank-silver { @apply bg-slate-800 text-slate-300 border-slate-700; }
+        .rank-bronze { @apply bg-orange-900/50 text-orange-400 border-orange-800; }
+
+        .score-badge { @apply px-4 py-1.5 rounded-full text-sm font-black bg-blue-600 text-white shadow-lg; }
+        
+        .input-tab { @apply px-5 py-2 rounded-xl text-sm font-black border-2 transition-all cursor-pointer; }
+        .input-tab.active { @apply bg-white border-white text-black shadow-lg; }
+        .input-tab.inactive { @apply bg-slate-900 border-slate-800 text-slate-500 hover:bg-slate-800; }
+
+        .grid-compact { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+
+        select.form-input {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23334155'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1.2em;
+        }
+
+        #login-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background-color: #020617;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .permission-notice {
+            @apply mt-6 p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-500 max-w-sm text-left;
+        }
+
+        .setup-guide {
+            @apply mt-8 p-6 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-400 max-w-md text-left;
+        }
+
+        .setup-guide h4 {
+            @apply font-black text-blue-400 mb-3 text-sm;
+        }
+
+        .setup-guide ol {
+            @apply list-decimal list-inside space-y-2;
+        }
+
+        .setup-guide li {
+            @apply mb-1;
+        }
+
+        .setup-guide code {
+            @apply bg-slate-950 px-2 py-1 rounded text-blue-300 font-mono text-xs;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <!-- 登入牆 -->
+    <div id="login-overlay">
+        <div class="bg-blue-600 p-6 rounded-[2.5rem] text-white shadow-2xl mb-8 animate-pulse">
+            <i class="fas fa-chart-line text-6xl"></i>
+        </div>
+        <h1 class="text-4xl font-black text-white mb-4 tracking-tighter">個人交易追蹤系統</h1>
+        <p class="text-slate-400 mb-10 max-w-sm px-6">啟用雲端同步功能，您的交易資料將安全地儲存於個人的 Google Sheet 中。</p>
+        
+        <div class="flex flex-col gap-4">
+            <button id="google-login-btn" onclick="handleAuthClick()" class="flex items-center gap-4 bg-white text-slate-900 px-8 py-4 rounded-2xl font-black text-xl hover:bg-slate-100 transition-all shadow-xl active:scale-95">
+                <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" class="w-8 h-8" alt="Google Logo">
+                使用 Google 帳號登入
+            </button>
+            
+            <button onclick="skipLogin()" class="text-sm font-bold text-slate-500 hover:text-blue-400 underline transition-all">
+                暫時跳過登入 (使用本地儲存)
+            </button>
+        </div>
+
+        <div class="permission-notice">
+            <p class="font-bold text-slate-400 mb-2 underline"><i class="fas fa-info-circle mr-1"></i> 瀏覽器設定提醒：</p>
+            <ul class="space-y-1">
+                <li>• 請允許彈出式視窗。</li>
+                <li>• 請勿阻擋第三方 Cookie。</li>
+                <li>• 若出現問題，請檢查廣告攔截器 (AdBlock)。</li>
+            </ul>
+        </div>
+
+        <div id="setup-guide-container" class="setup-guide hidden">
+            <h4>⚙️ 設定提醒</h4>
+            <ol>
+                <li>造訪 <code>Google Cloud Console</code></li>
+                <li>建立 OAuth 2.0 Client ID（Web 應用）</li>
+                <li>新增授權 JavaScript 來源：<code id="origin-url"></code></li>
+                <li>複製 <code>CLIENT_ID</code> 與 <code>API_KEY</code> 到程式</li>
+                <li>重新整理頁面即可登入</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- 導覽列 -->
+    <nav id="main-nav" class="glass-effect shadow-2xl sticky top-0 z-50 px-6 py-4 hidden">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="navigateTo('home')">
+                <div class="bg-blue-600 p-2.5 rounded-2xl text-white shadow-xl">
+                    <i class="fas fa-chart-line text-2xl"></i>
+                </div>
+                <h1 class="text-2xl font-black tracking-tighter text-white">個人交易追蹤系統</h1>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div id="user-profile" class="flex items-center gap-3 bg-slate-800 p-1.5 pr-4 rounded-2xl border border-slate-700">
+                    <img id="user-avatar" src="https://ui-avatars.com/api/?name=User&background=2563eb&color=fff" class="w-10 h-10 rounded-xl border-2 border-blue-500 shadow-lg" alt="Avatar">
+                    <div class="flex flex-col">
+                        <span id="user-display-name" class="text-sm font-black text-white leading-tight">本地使用者</span>
+                        <button onclick="handleSignoutClick()" class="text-[10px] font-bold text-red-400 hover:text-red-300 text-left uppercase tracking-tighter">登出帳號</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main id="app-container" class="max-w-7xl mx-auto p-4 md:p-10">
+        <!-- 內容區域 -->
+    </main>
+
+    <script>
+        /**
+         * 🔑 Google API 設定 - 直接填入你的值
+         * 
+         * 如何取得：
+         * 1. 到 https://console.cloud.google.com/
+         * 2. 建立新專案
+         * 3. 啟用 Google Drive API 和 Google Sheets API
+         * 4. 建立 OAuth 2.0 Client ID (Web 應用)
+         * 5. 在「已授權的 JavaScript 來源」加入：https://你的帳號.github.io
+         * 6. 建立 API Key，限制於 HTTP referer：https://你的帳號.github.io/*
+         * 7. 複製 Client ID 和 API Key 到下面
+         */
+        const CLIENT_ID = ''; // TODO: 填入你的 OAuth 2.0 Client ID
+        const API_KEY   = ''; // TODO: 填入你的 API Key
+        
+        const DISCOVERY_DOCS = [
+            "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest",
+            "https://www.googleapis.com/discovery/v1/apis/sheets/v4/rest"
+        ];
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets';
+
+        let tokenClient = null;
+        let gapiInited = false;
+        let gsisInited = false;
+
+        /**
+         * 資料管理
+         */
+        const STORAGE_KEY = 'vp_trading_tracker_v5_final';
+        const CLOUD_KEY   = 'vp_trading_tracker_cloud_config';
+
+        let tradingData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { stock: [], gold: [] };
+        let cloudConfig = JSON.parse(localStorage.getItem(CLOUD_KEY)) || null;
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tradingData));
+        }
+
+        function saveCloudConfig() {
+            localStorage.setItem(CLOUD_KEY, JSON.stringify(cloudConfig));
+        }
+
+        /**
+         * 初始化檢查：如果沒有設定 CLIENT_ID，顯示提醒
+         */
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!CLIENT_ID || !API_KEY) {
+                document.getElementById('setup-guide-container').classList.remove('hidden');
+                document.getElementById('origin-url').innerText = window.location.origin;
+            }
+        });
+
+        /**
+         * GAPI / GIS 初始化
+         */
+        window.gapiLoaded = function() {
+            if (typeof gapi !== 'undefined') {
+                gapi.load('client', async () => {
+                    try {
+                        if (API_KEY) {
+                            await gapi.client.init({ apiKey: API_KEY, discoveryDocs: DISCOVERY_DOCS });
+                            gapiInited = true;
+                            console.log("✅ GAPI 初始化成功");
+                        } else {
+                            console.warn("⚠️ 未設定 API_KEY，GAPI 初始化略過");
+                        }
+                    } catch (err) {
+                        console.warn("❌ GAPI 初始化失敗", err);
+                    }
+                });
+            }
+        };
+
+        window.gisLoaded = function() {
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                try {
+                    if (CLIENT_ID) {
+                        tokenClient = google.accounts.oauth2.initTokenClient({
+                            client_id: CLIENT_ID,
+                            scope: SCOPES,
+                            callback: '', 
+                        });
+                        gsisInited = true;
+                        console.log("✅ GIS 初始化成功");
+                    } else {
+                        console.warn("⚠️ 未設定 CLIENT_ID，GIS 初始化略過");
+                    }
+                } catch (err) {
+                    console.warn("❌ GIS 初始化失敗", err);
+                }
+            }
+        };
+
+        /**
+         * 登入邏輯
+         */
+        async function handleAuthClick() {
+            if (!CLIENT_ID || !API_KEY) {
+                alert("❌ CLIENT_ID 或 API_KEY 未設定。\n\n請到程式碼頂部填入你的 Google Cloud 認證資訊。");
+                return;
+            }
+
+            if (!gsisInited || !tokenClient) {
+                alert("❌ Google 登入套件初始化失敗。\n\n請檢查：\n• 是否正確填入 CLIENT_ID\n• 是否允許彈出式視窗\n• 廣告攔截器是否阻擋\n\n重新整理頁面後再試。");
+                return;
+            }
+            
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) {
+                    console.error("❌ Auth Error:", resp);
+                    alert("登入失敗：" + resp.error);
+                    return;
+                }
+
+                if (!gapiInited) {
+                    alert("❌ GAPI 尚未初始化完成，請稍後再試。");
+                    return;
+                }
+
+                // ★ 第一次登入時做雲端初始化
+                await initCloudIfNeeded();
+                showAppUI("雲端交易員");
+            };
+
+            if (gapi.client.getToken() === null) {
+                tokenClient.requestAccessToken({prompt: 'consent'});
+            } else {
+                tokenClient.requestAccessToken({prompt: ''});
+            }
+        }
+
+        function skipLogin() {
+            showAppUI("本地使用者");
+        }
+
+        function showAppUI(userName) {
+            document.getElementById('login-overlay').classList.add('hidden');
+            document.getElementById('main-nav').classList.remove('hidden');
+            document.getElementById('user-display-name').innerText = userName;
+            navigateTo('home');
+        }
+
+        function handleSignoutClick() {
+            if (typeof gapi !== 'undefined' && gapi.client && gapi.client.getToken()) {
+                const token = gapi.client.getToken();
+                google.accounts.oauth2.revoke(token.access_token);
+                gapi.client.setToken('');
+            }
+            location.reload();
+        }
+
+        /**
+         * 雲端初始化：建資料夾 + 建 Sheet + 把現有資料丟上去
+         */
+        async function initCloudIfNeeded() {
+            if (cloudConfig && cloudConfig.spreadsheetId) {
+                console.log("✅ 已有既存雲端設定，略過初始化");
+                return;
+            }
+
+            try {
+                console.log("🚀 開始初始化雲端...");
+
+                // 1. 建 Google Drive 資料夾
+                const folderRes = await gapi.client.drive.files.create({
+                    resource: {
+                        name: 'VP Trading Tracker',
+                        mimeType: 'application/vnd.google-apps.folder'
+                    },
+                    fields: 'id'
+                });
+                const folderId = folderRes.result.id;
+                console.log("✅ 資料夾已建立:", folderId);
+
+                // 2. 建 Google Sheet (兩個工作表 Stock / Gold)
+                const sheetRes = await gapi.client.sheets.spreadsheets.create({
+                    resource: {
+                        properties: { title: 'VP Trading Tracker - Records' },
+                        sheets: [
+                            { properties: { title: 'Stock' } },
+                            { properties: { title: 'Gold' } }
+                        ]
+                    },
+                    fields: 'spreadsheetId'
+                });
+                const spreadsheetId = sheetRes.result.spreadsheetId;
+                console.log("✅ Google Sheet 已建立:", spreadsheetId);
+
+                // 3. 把 Sheet 移動到資料夾底下
+                await gapi.client.drive.files.update({
+                    fileId: spreadsheetId,
+                    addParents: folderId,
+                    fields: 'id, parents'
+                });
+                console.log("✅ Sheet 已移到資料夾");
+
+                cloudConfig = { folderId, spreadsheetId };
+                saveCloudConfig();
+
+                // 4. 初始化：把現有 localStorage 的資料寫進 Sheet
+                await syncAllToSheet(spreadsheetId);
+                console.log("✅ 初始資料已同步到 Sheet");
+
+            } catch (err) {
+                console.error("❌ 雲端初始化失敗", err);
+                alert("雲端初始化失敗，暫時以本地模式運作。\n\n錯誤信息：" + (err.message || JSON.stringify(err)));
+            }
+        }
+
+        async function syncAllToSheet(spreadsheetId) {
+            const header = [
+                'id', 'date', 'item', 'type', 'rank',
+                'entryPrice', 'units', 'tp', 'sl',
+                'exitPrice', 'conditions', 'reflection', 'timestamp'
+            ];
+
+            const stockValues = [
+                header,
+                ...tradingData.stock.map(r => [
+                    r.id, r.date, r.item, r.type, r.rank,
+                    r.entryPrice, r.units, r.tp, r.sl,
+                    r.exitPrice, (r.conditions || []).join('|'),
+                    r.reflection, r.timestamp
+                ])
+            ];
+
+            const goldValues = [
+                header,
+                ...tradingData.gold.map(r => [
+                    r.id, r.date, r.item, r.type, r.rank,
+                    r.entryPrice, r.units, r.tp, r.sl,
+                    r.exitPrice, (r.conditions || []).join('|'),
+                    r.reflection, r.timestamp
+                ])
+            ];
+
+            // 覆蓋整張 Stock 工作表
+            await gapi.client.sheets.spreadsheets.values.update({
+                spreadsheetId,
+                range: 'Stock!A1',
+                valueInputOption: 'USER_ENTERED',
+                resource: { values: stockValues }
+            });
+
+            // 覆蓋整張 Gold 工作表
+            await gapi.client.sheets.spreadsheets.values.update({
+                spreadsheetId,
+                range: 'Gold!A1',
+                valueInputOption: 'USER_ENTERED',
+                resource: { values: goldValues }
+            });
+        }
+
+        async function syncOneRecordToSheet(spreadsheetId, market, record) {
+            const sheetName = (market === 'stock') ? 'Stock' : 'Gold';
+            const values = [[
+                record.id,
+                record.date,
+                record.item,
+                record.type,
+                record.rank,
+                record.entryPrice,
+                record.units,
+                record.tp,
+                record.sl,
+                record.exitPrice,
+                (record.conditions || []).join('|'),
+                record.reflection,
+                record.timestamp
+            ]];
+
+            await gapi.client.sheets.spreadsheets.values.append({
+                spreadsheetId,
+                range: `${sheetName}!A1`,
+                valueInputOption: 'USER_ENTERED',
+                insertDataOption: 'INSERT_ROWS',
+                resource: { values }
+            });
+        }
+
+        /**
+         * 交易判定邏輯
+         */
+        function determineResult(type, entry, exit) {
+            const e = parseFloat(entry);
+            const x = parseFloat(exit);
+            if (isNaN(e) || isNaN(x)) return "待定";
+            if (type === '多') {
+                return x > e ? "獲利" : (x < e ? "虧損" : "平手");
+            } else {
+                return x < e ? "獲利" : (x > e ? "虧損" : "平手");
+            }
+        }
+
+        function calculateTradeScore(record) {
+            let score = 0;
+            if (record.rank === '金單') score += 40;
+            else if (record.rank === '銀單') score += 25;
+            else if (record.rank === '銅單') score += 10;
+            (record.conditions || []).forEach(() => score += 10);
+            return Math.min(score, 100);
+        }
+
+        function calculateRR(entry, tp, sl) {
+            const e = parseFloat(entry);
+            const t = parseFloat(tp);
+            const s = parseFloat(sl);
+            if (isNaN(e) || isNaN(t) || isNaN(s) || e === s) return "0.0";
+            return (Math.abs(t - e) / Math.abs(e - s)).toFixed(1);
+        }
+
+        const stockMap = { "2330": "台積電", "2317": "鴻海", "2454": "聯發科", "2303": "聯電", "2603": "長榮", "2881": "富邦金" };
+
+        /**
+         * 頁面渲染
+         */
+        window.navigateTo = (page, params = null) => {
+            const container = document.getElementById('app-container');
+            container.innerHTML = '';
+            window.scrollTo(0, 0);
+
+            switch(page) {
+                case 'home': renderHome(container); break;
+                case 'details': renderDetails(container, params); break;
+                case 'strategy': renderStrategy(container); break;
+                case 'form': renderForm(container, params.type, params.id); break;
+            }
+        };
+
+        function renderHome(container) {
+            container.innerHTML = `
+                <div class="page-transition">
+                    <div class="mb-14 mt-4 text-center md:text-left">
+                        <h2 class="text-5xl font-black text-white tracking-tighter">數據儀表板</h2>
+                        <p class="text-xl text-slate-400 mt-4 font-medium italic">Vegas + VP 交易紀律的核心統計</p>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-8">
+                        <div onclick="navigateTo('details', 'stock')" class="card-stock group p-12 rounded-[3rem] shadow-2xl cursor-pointer transform hover:-translate-y-3 transition-all duration-300 text-white relative overflow-hidden border border-white/10">
+                            <i class="fas fa-chart-line text-6xl mb-8 block"></i>
+                            <h3 class="text-3xl font-black">台股市場紀錄</h3>
+                            <p class="text-blue-100 opacity-80 mt-2 font-bold text-lg">Stock Trading</p>
+                        </div>
+                        <div onclick="navigateTo('details', 'gold')" class="card-gold group p-12 rounded-[3rem] shadow-2xl cursor-pointer transform hover:-translate-y-3 transition-all duration-300 text-white relative overflow-hidden border border-white/10">
+                            <i class="fas fa-coins text-6xl mb-8 block"></i>
+                            <h3 class="text-3xl font-black">黃金市場紀錄</h3>
+                            <p class="text-amber-100 opacity-80 mt-2 font-bold text-lg">XAUUSD Trading</p>
+                        </div>
+                        <div onclick="navigateTo('strategy')" class="card-strategy group p-12 rounded-[3rem] shadow-2xl cursor-pointer transform hover:-translate-y-3 transition-all duration-300 text-white relative overflow-hidden border border-white/10">
+                            <i class="fas fa-shield-halved text-6xl mb-8 block text-purple-200"></i>
+                            <h3 class="text-3xl font-black">交易策略框架</h3>
+                            <p class="text-purple-100 opacity-80 mt-2 font-bold text-lg">Core Strategy</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDetails(container, marketType) {
+            const data = tradingData[marketType] || [];
+            const settled = data.filter(d => d.exitPrice && d.exitPrice.trim() !== "");
+            const wins = settled.filter(d => determineResult(d.type, d.entryPrice, d.exitPrice) === '獲利').length;
+            const winRate = settled.length > 0 ? ((wins / settled.length) * 100).toFixed(1) : '0.0';
+
+            container.innerHTML = `
+                <div class="page-transition">
+                    <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+                        <div>
+                            <button onclick="navigateTo('home')" class="text-slate-500 hover:text-blue-400 mb-4 flex items-center gap-3 text-lg font-black transition-all">
+                                <i class="fas fa-chevron-left"></i> 返回首頁
+                            </button>
+                            <h2 class="text-4xl font-black text-white tracking-tight">${marketType === 'gold' ? '黃金 XAUUSD' : '台股市場'}</h2>
+                        </div>
+                        <button onclick="navigateTo('form', {type: '${marketType}'})" class="bg-blue-600 hover:bg-blue-500 text-white px-10 py-5 rounded-[2rem] flex items-center gap-3 shadow-2xl transition-all active:scale-95 font-black text-xl border border-blue-400/30">
+                            <i class="fas fa-plus"></i> 新增紀錄
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-12">
+                        <div class="bg-slate-900 p-10 md:p-14 rounded-[2.5rem] border-2 border-slate-800 shadow-sm text-center">
+                            <p class="text-sm font-black text-slate-500 mb-2 uppercase tracking-widest">目前勝率</p>
+                            <span class="text-5xl md:text-6xl font-black text-blue-500">${winRate}%</span>
+                        </div>
+                        <div class="bg-slate-900 p-10 md:p-14 rounded-[2.5rem] border-2 border-slate-800 shadow-sm text-center">
+                            <p class="text-sm font-black text-slate-500 mb-2 uppercase tracking-widest">統計單數</p>
+                            <span class="text-5xl md:text-6xl font-black text-slate-200">${data.length}</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-8">
+                        ${data.length === 0 ? `<div class="p-32 text-center text-slate-600 text-2xl italic bg-slate-900 rounded-[4rem] border border-dashed border-slate-800">無任何本地紀錄</div>` : ''}
+                        ${data.map(item => {
+                            const result = determineResult(item.type, item.entryPrice, item.exitPrice);
+                            const isSettled = item.exitPrice && item.exitPrice.trim() !== "";
+                            return `
+                            <div class="bg-slate-900 rounded-[3.5rem] border border-slate-800 shadow-sm overflow-hidden hover:border-slate-600 transition-all">
+                                <div class="p-10 flex-1">
+                                    <div class="flex justify-between items-start mb-8">
+                                        <div>
+                                            <div class="flex items-center gap-4 mb-3">
+                                                <span class="text-sm font-bold text-slate-500">${item.date}</span>
+                                                <span class="px-4 py-1.5 rounded-xl text-xs font-black border ${getRankClass(item.rank)}">${item.rank || '未分級'}</span>
+                                                <span class="score-badge">Score: ${calculateTradeScore(item)}</span>
+                                                <span class="text-xs font-black ${isSettled ? 'text-blue-400' : 'text-amber-500'}">
+                                                    ${isSettled ? '已結單' : '持倉中'}
+                                                </span>
+                                            </div>
+                                            <h3 class="text-3xl font-black text-white">
+                                                ${item.item} 
+                                                <span class="${item.type === '多' ? 'text-red-400' : 'text-green-400'}">[${item.type}]</span>
+                                            </h3>
+                                        </div>
+                                        <div class="flex gap-4">
+                                            <button onclick="navigateTo('form', {type: '${marketType}', id: '${item.id}'})" class="text-slate-600 hover:text-blue-400 transition-all p-4 text-2xl"><i class="fas fa-edit"></i></button>
+                                            <button onclick="deleteTrade('${marketType}', '${item.id}')" class="text-slate-600 hover:text-red-500 transition-all p-4 text-2xl"><i class="fas fa-trash-can"></i></button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-10 mb-10">
+                                        <div><p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">進場價 / 單位</p><p class="font-mono font-black text-slate-200 text-2xl">${item.entryPrice} / ${item.units}</p></div>
+                                        <div><p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">出場價格</p><p class="font-mono font-black text-blue-400 text-2xl">${item.exitPrice || '-'}</p></div>
+                                        <div><p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">盈虧比 (R)</p><p class="font-mono font-black text-purple-400 text-2xl">${calculateRR(item.entryPrice, item.tp, item.sl)} R</p></div>
+                                        <div><p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">判定結果</p><p class="font-black text-2xl ${result === '獲利' ? 'text-red-400' : (result === '虧損' ? 'text-green-400' : 'text-slate-300')}">${result}</p></div>
+                                    </div>
+
+                                    <div class="bg-slate-800/50 p-8 rounded-[2rem] text-lg text-slate-400 leading-relaxed border border-slate-700/50">
+                                        <strong class="text-slate-200 font-black">回測反思：</strong> ${item.reflection || '無備註'}
+                                    </div>
+                                </div>
+                            </div>
+                        `;}).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getRankClass(rank) {
+            if (rank === '金單') return 'rank-gold';
+            if (rank === '銀單') return 'rank-silver';
+            if (rank === '銅單') return 'rank-bronze';
+            return 'bg-slate-800 text-slate-500 border-slate-700';
+        }
+
+        window.switchInputMethod = (method) => {
+            const autoBox = document.getElementById('auto-lookup-box');
+            const manualBox = document.getElementById('manual-input-box');
+            const autoTab = document.getElementById('tab-auto');
+            const manualTab = document.getElementById('tab-manual');
+
+            if (method === 'auto') {
+                autoBox.classList.remove('hidden'); manualBox.classList.add('hidden');
+                autoTab.classList.add('active'); autoTab.classList.remove('inactive');
+                manualTab.classList.remove('active'); manualTab.classList.add('inactive');
+            } else {
+                autoBox.classList.add('hidden'); manualBox.classList.remove('hidden');
+                autoTab.classList.remove('active'); autoTab.classList.add('inactive');
+                manualTab.classList.add('active'); manualTab.classList.remove('inactive');
+            }
+        };
+
+        window.lookupStockId = (id) => {
+            const display = document.getElementById('auto-lookup-result');
+            const hiddenInput = document.getElementById('item-hidden-input');
+            if (stockMap[id]) {
+                display.innerText = `找到標的：${stockMap[id]}`;
+                display.className = "mt-2 text-sm text-blue-400 font-black";
+                hiddenInput.value = `${id} ${stockMap[id]}`;
+            } else {
+                display.innerText = id.length >= 4 ? "查無此代號，請使用手動輸入" : "請輸入 4 碼代號";
+                display.className = "mt-2 text-sm text-slate-500 font-bold";
+                hiddenInput.value = "";
+            }
+        };
+
+        function renderForm(container, marketType, id = null) {
+            const isEdit = id !== null;
+            const isGold = marketType === 'gold';
+            let record = isEdit ? tradingData[marketType].find(r => r.id === id) : {
+                id: Date.now().toString(), date: new Date().toISOString().split('T')[0], 
+                item: isGold ? '黃金 XAUUSD' : '', 
+                type: '多', rank: '', entryPrice: '', 
+                units: isGold ? '0.01' : '1',
+                tp: '', sl: '', exitPrice: '',
+                conditions: [], reflection: ''
+            };
+
+            container.innerHTML = `
+                <div class="page-transition max-w-7xl mx-auto mb-32">
+                    <button onclick="navigateTo('details', '${marketType}')" class="text-slate-500 hover:text-blue-400 mb-10 flex items-center gap-3 font-black text-xl transition-all">
+                        <i class="fas fa-chevron-left"></i> 取消並返回
+                    </button>
+
+                    <div class="bg-slate-900 rounded-[4rem] shadow-2xl border border-slate-800 overflow-hidden">
+                        <div class="bg-slate-800/50 px-14 py-12 border-b border-slate-800">
+                            <h2 class="text-4xl font-black text-white">${isEdit ? '編輯' : '新增'} ${isGold ? '黃金' : '台股'} 交易紀錄</h2>
+                        </div>
+                        
+                        <form id="trading-form" class="p-14 space-y-14">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+                                <div><label class="form-label">進場日期</label><input type="date" name="date" value="${record.date}" class="form-input" required></div>
+                                <div class="md:col-span-1">
+                                    <label class="form-label">交易標定</label>
+                                    ${!isGold ? `
+                                    <div class="flex gap-2 mb-4">
+                                        <div id="tab-auto" class="input-tab active" onclick="switchInputMethod('auto')">代號查找</div>
+                                        <div id="tab-manual" class="input-tab inactive" onclick="switchInputMethod('manual')">手動輸入</div>
+                                    </div>
+                                    <div id="auto-lookup-box">
+                                        <input type="text" placeholder="例如：2330" class="form-input" oninput="lookupStockId(this.value)">
+                                        <p id="auto-lookup-result" class="mt-2 text-sm text-slate-500 font-bold">自動匹配名稱</p>
+                                        <input type="hidden" id="item-hidden-input" name="item" value="${record.item}">
+                                    </div>
+                                    <div id="manual-input-box" class="hidden">
+                                        <input type="text" class="form-input" placeholder="手動標的名稱" oninput="document.getElementById('item-hidden-input').value = this.value">
+                                    </div>
+                                    ` : `
+                                    <input type="text" value="黃金 XAUUSD" class="form-input bg-slate-100" readonly>
+                                    <input type="hidden" name="item" value="黃金 XAUUSD">
+                                    `}
+                                </div>
+                                <div>
+                                    <label class="form-label">交易方向</label>
+                                    <select name="type" id="type-select" class="form-input font-black" onchange="updateFormUI(this.value, '${marketType}')">
+                                        <option value="多" ${record.type === '多' ? 'selected' : ''}>多單 (Long)</option>
+                                        <option value="空" ${record.type === '空' ? 'selected' : ''}>空單 (Short)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <section>
+                                <h3 class="text-xl font-black text-blue-500 mb-8 border-b border-slate-800 pb-3">核心評分與等級權重</h3>
+                                <div class="grid md:grid-cols-2 gap-12">
+                                    <div class="space-y-4" id="condition-section"></div>
+                                    <div class="space-y-4" id="rank-section"></div>
+                                </div>
+                            </section>
+
+                            <section>
+                                <h3 class="text-xl font-black text-blue-500 mb-8 border-b border-slate-800 pb-3">交易數據分析</h3>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                                    <div><label class="form-label">單位 ${!isGold ? '(張)' : ''}</label><input type="text" name="units" value="${record.units}" class="form-input"></div>
+                                    <div><label class="form-label">進場價格</label><input type="text" id="entry-price" name="entryPrice" value="${record.entryPrice}" class="form-input" placeholder="請輸入進場點位" oninput="refreshCalculations()" required></div>
+                                    <div><label class="form-label">停利 TP</label><input type="text" id="tp-price" name="tp" value="${record.tp}" class="form-input" placeholder="獲利目標" oninput="refreshCalculations()"></div>
+                                    <div><label class="form-label">停損 SL</label><input type="text" id="sl-price" name="sl" value="${record.sl}" class="form-input" placeholder="防守位" oninput="refreshCalculations()"></div>
+                                </div>
+                                <div class="mt-10">
+                                    <label class="form-label text-blue-400 text-xs uppercase tracking-widest">出場價格 (填寫後自動判定結單與勝負)</label>
+                                    <input type="text" id="exit-price" name="exitPrice" value="${record.exitPrice}" class="form-input border-blue-500/50" oninput="refreshCalculations()">
+                                </div>
+                                
+                                <div class="mt-10 bg-slate-800 text-white p-10 rounded-[2.5rem] flex flex-col md:flex-row justify-between items-center shadow-inner border border-slate-700">
+                                    <div class="flex gap-10">
+                                        <div><span class="text-slate-500 font-bold block mb-1 uppercase text-xs">盈虧比</span><span id="rr-preview" class="text-3xl font-black text-purple-400">0.0 R</span></div>
+                                        <div><span class="text-slate-500 font-bold block mb-1 uppercase text-xs">判定</span><span id="result-preview" class="text-3xl font-black text-white">-</span></div>
+                                    </div>
+                                    <div class="text-center md:text-right">
+                                        <span class="text-slate-500 font-bold block mb-1 uppercase text-xs">綜合得分</span>
+                                        <span id="score-preview" class="text-5xl font-black text-green-400">0 Pts</span>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="w-full">
+                                <label class="form-label">複盤與檢討紀錄</label>
+                                <textarea name="reflection" rows="14" class="form-input block w-full" style="width: 100% !important; min-width: 100% !important;" placeholder="記錄您的心理狀態、紀律執行或技術細節...">${record.reflection}</textarea>
+                            </section>
+
+                            <div class="pt-10">
+                                <button type="button" onclick="handleSave('${marketType}', '${record.id}')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-8 rounded-[2rem] shadow-2xl transition-all active:scale-[0.98] text-2xl uppercase border border-blue-400/30 tracking-widest">
+                                    儲存並同步交易紀錄
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            updateFormUI(record.type, marketType, record.conditions, record.rank);
+            refreshCalculations();
+        }
+
+        window.updateFormUI = (tradeType, marketType, savedConds = [], savedRank = '') => {
+            const condEl = document.getElementById('condition-section');
+            const rankEl = document.getElementById('rank-section');
+            let conds = (tradeType === '多') ? ['Vegas通道往上', 'RSI黃金交叉'] : ['Vegas通道往下', 'RSI死亡交叉'];
+            let ranks = (tradeType === '多') 
+                ? [{n:'金單',d:'VAL插針'}, {n:'銀單',d:'VAL/POC區間'}, {n:'銅單',d:'POC處'}] 
+                : [{n:'金單',d:'VAH插針'}, {n:'銀單',d:'VAL/POC區間'}, {n:'銅單',d:'POC處'}];
+            condEl.innerHTML = conds.map(c => 
+                `<label class="checkbox-card"><input type="checkbox" name="conditions" value="${c}" ${savedConds.includes(c)?'checked':''} onchange="refreshCalculations()"> <span class="text-base font-black text-slate-200">${c}</span></label>`
+            ).join('');
+            rankEl.innerHTML = ranks.map(r => 
+                `<label class="checkbox-card ${savedRank === r.n ? 'ring-4 ring-blue-500 bg-slate-800' : ''}">
+                    <input type="radio" name="rank" value="${r.n}" ${savedRank === r.n ? 'checked' : ''} onchange="refreshCalculations()"> 
+                    <div class="flex-1 flex justify-between items-center">
+                        <div class="flex flex-col">
+                            <span class="font-black text-slate-200 text-lg">${r.n}</span>
+                            <span class="text-xs text-slate-500 font-bold">${r.d}</span>
+                        </div>
+                    </div>
+                </label>`
+            ).join('');
+        };
+
+        window.refreshCalculations = () => {
+            const entry = document.getElementById('entry-price').value;
+            const exit = document.getElementById('exit-price').value;
+            const type = document.getElementById('type-select').value;
+            const tp = document.getElementById('tp-price').value;
+            const sl = document.getElementById('sl-price').value;
+
+            const res = determineResult(type, entry, exit);
+            const resEl = document.getElementById('result-preview');
+            resEl.innerText = res;
+            resEl.className = `text-3xl font-black ${res === '獲利' ? 'text-red-400' : (res === '虧損' ? 'text-green-400' : 'text-slate-300')}`;
+
+            document.getElementById('rr-preview').innerText = calculateRR(entry, tp, sl) + " R";
+
+            const rank = document.querySelector('input[name="rank"]:checked')?.value;
+            const conditions = Array.from(document.querySelectorAll('input[name="conditions"]:checked')).map(e => e.value);
+            const score = calculateTradeScore({ rank, conditions });
+            document.getElementById('score-preview').innerText = score + " Pts";
+        };
+
+        window.handleSave = (market, id) => {
+            const form = document.getElementById('trading-form');
+            const formData = new FormData(form);
+            const record = {
+                id: id,
+                date: formData.get('date'),
+                item: formData.get('item'),
+                type: formData.get('type'),
+                rank: formData.get('rank'),
+                entryPrice: formData.get('entryPrice'),
+                units: formData.get('units'),
+                tp: formData.get('tp'),
+                sl: formData.get('sl'),
+                exitPrice: formData.get('exitPrice'),
+                conditions: Array.from(document.querySelectorAll('input[name="conditions"]:checked')).map(e => e.value),
+                reflection: formData.get('reflection'),
+                timestamp: Date.now()
+            };
+            const index = tradingData[market].findIndex(r => r.id === id);
+            if (index > -1) tradingData[market][index] = record;
+            else tradingData[market].unshift(record);
+
+            saveData();
+
+            if (cloudConfig && cloudConfig.spreadsheetId && gapiInited) {
+                syncOneRecordToSheet(cloudConfig.spreadsheetId, market, record)
+                    .catch(err => console.error("❌ 雲端同步失敗", err));
+            }
+
+            navigateTo('details', market);
+        };
+
+        window.deleteTrade = (market, id) => {
+            if (confirm('確定永久刪除？')) {
+                tradingData[market] = tradingData[market].filter(r => r.id !== id);
+                saveData();
+                navigateTo('details', market);
+            }
+        };
+
+        function renderStrategy(container) {
+            container.innerHTML = `
+                <div class="page-transition">
+                    <button onclick="navigateTo('home')" class="text-slate-500 hover:text-blue-400 mb-10 flex items-center gap-3 font-black text-xl transition-all">
+                        <i class="fas fa-chevron-left"></i> 返回主頁
+                    </button>
+                    <div class="flex items-center gap-6 mb-16">
+                        <div class="bg-blue-600 text-white p-6 rounded-[2.5rem] shadow-2xl"><i class="fas fa-scroll text-4xl"></i></div>
+                        <div><h2 class="text-4xl font-black text-white">核心交易策略框架</h2><p class="text-xl text-slate-500 font-bold">四大支柱：從趨勢到技術執行</p></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+                        <div class="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-sm"><h3 class="text-2xl font-black text-blue-500 mb-6">1. 趨勢確認 (Trend)</h3><p class="text-slate-400 text-lg">觀察大時區 Vegas 通道。價格在通道之上且通道向上為多頭；反之為空頭。絕不逆勢而為。</p></div>
+                        <div class="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-sm"><h3 class="text-2xl font-black text-blue-500 mb-6">2. 基本面加分 (Fundamental)</h3><p class="text-slate-400 text-lg">觀察營收表現、利率預期或宏觀環境。良好的基本面決定了持倉信心。</p></div>
+                        <div class="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-sm"><h3 class="text-2xl font-black text-blue-500 mb-6">3. 消息面加分 (News)</h3><p class="text-slate-400 text-lg">關注地緣政治、法人籌碼或突發消息。消息面是價格快速脫離成本區的觸媒。</p></div>
+                        <div class="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-sm"><h3 class="text-2xl font-black text-blue-500 mb-6">4. 技術執行 (Technical)</h3><p class="text-slate-400 text-lg">依據 VP 等級判斷入場，結合 RSI 交叉扣板機。嚴格執行 TP/SL。</p></div>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+
+    <!-- GAPI / GIS 載入 -->
+    <script src="https://apis.google.com/js/api.js?onload=gapiLoaded" async defer></script>
+    <script src="https://accounts.google.com/gsi/client" async defer onload="gisLoaded()"></script>
+</body>
+</html>
