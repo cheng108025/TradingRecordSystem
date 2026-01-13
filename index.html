@@ -73,26 +73,25 @@
             width: 1.5rem;
             height: 1.5rem;
             accent-color: #2563eb;
-            border-radius: 0.5rem;
         }
 
-        /* 金銀銅等級色彩 */
+        /* 金銀銅等級色彩強化 */
         .rank-gold { 
-            background: #fbbf24;
-            color: black;
-            border: 1px solid #fcd34d;
+            background: #fbbf24 !important;
+            color: black !important;
+            border: 1px solid #fcd34d !important;
             box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
         }
         .rank-silver { 
-            background: #cbd5e1;
-            color: black;
-            border: 1px solid #f1f5f9;
+            background: #cbd5e1 !important;
+            color: black !important;
+            border: 1px solid #f1f5f9 !important;
             box-shadow: 0 0 15px rgba(203, 213, 225, 0.3);
         }
         .rank-bronze { 
-            background: #b45309;
-            color: white;
-            border: 1px solid #f97316;
+            background: #b45309 !important;
+            color: white !important;
+            border: 1px solid #f97316 !important;
             box-shadow: 0 0 15px rgba(234, 88, 12, 0.3);
         }
 
@@ -126,7 +125,6 @@
             border-color: #334155;
             color: #64748b;
         }
-        .input-tab.inactive:hover { background-color: #0f172a; }
 
         #delete-modal {
             display: none;
@@ -147,6 +145,9 @@
             background-size: 1.2em;
             padding-right: 2rem;
         }
+        
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="min-h-screen pb-12">
@@ -161,7 +162,7 @@
             <p class="text-slate-400 text-center mb-8">此操作無法復原，該筆交易紀錄將從本地儲存空間移除。</p>
             <div class="flex gap-4">
                 <button onclick="closeDeleteModal()" class="flex-1 py-4 rounded-2xl bg-slate-800 text-white font-bold hover:bg-slate-700 transition-all">取消</button>
-                <button id="confirm-delete-btn" class="flex-1 py-4 rounded-2xl bg-red-600 text-white font-bold hover:bg-red-500 transition-all shadow-lg shadow-red-900/20">確定刪除</button>
+                <button id="confirm-delete-btn" class="flex-1 py-4 rounded-2xl bg-red-600 text-white font-bold hover:bg-red-500 transition-all shadow-lg">確定刪除</button>
             </div>
         </div>
     </div>
@@ -195,8 +196,49 @@
         const STORAGE_KEY = 'vp_trading_tracker_v5_local_final';
         
         const initialData = {
-            stock: [],
-            gold: []
+            stock: [
+                { id: 's1', date: '2025-01-13', item: '皇家可口 7791', type: '多', rank: '', entryPrice: '89.5', units: '1', tp: '', sl: '', exitPrice: '', conditions: [], fundamental: true, news: false, reflection: '長期看好當存股', timestamp: 1736755200000 },
+                { id: 's2', date: '2025-01-13', item: '中探針 6217', type: '多', rank: '金單', entryPrice: '53.0', units: '1', tp: '58.0', sl: '50', exitPrice: '', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: true, reflection: 'Vegas通道+RSI黃金交叉+VP的VAL', timestamp: 1736755200001 },
+                { id: 's3', date: '2025-01-13', item: '精材 3374', type: '多', rank: '金單', entryPrice: '146.5', units: '1', tp: '154', sl: '143', exitPrice: '', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: true, reflection: 'VP的POC(完美)', timestamp: 1736755200002 },
+                { id: 's4', date: '2024-12-05', item: '中探針 6217', type: '多', rank: '銀單', entryPrice: '51.3', units: '1', tp: '56.2', sl: '48', exitPrice: '', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: false, reflection: 'VAL與POC之間', timestamp: 1733356800000 },
+                { id: 's5', date: '2025-12-31', item: '雄獅 2731', type: '多', rank: '銅單', entryPrice: '164.5', units: '1', tp: '172', sl: '147', exitPrice: '', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: false, reflection: '', timestamp: 1767139200000 },
+                { id: 's6', date: '2025-01-08', item: '光寶科 2301', type: '多', rank: '銀單', entryPrice: '161', units: '1', tp: '177', sl: '147', exitPrice: '', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: false, reflection: 'VAL到POC之間', timestamp: 1736294400000 },
+                { id: 's7', date: '2025-01-10', item: '矽統 2363', type: '多', rank: '金單', entryPrice: '56.2', units: '1', tp: '59', sl: '56', exitPrice: '56.9', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: false, reflection: '當沖沖掉，沒跌破VAL', timestamp: 1736467200000 },
+                { id: 's8', date: '2025-01-10', item: '矽統 2363', type: '多', rank: '金單', entryPrice: '56.2', units: '1', tp: '61.2', sl: '55.1', exitPrice: '58', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: false, reflection: '換成中探針', timestamp: 1736467200001 },
+                { id: 's9', date: '2025-01-10', item: '保勝光學 6517', type: '空', rank: '銀單', entryPrice: '66.6', units: '1', tp: '65.3', sl: '67.8', exitPrice: '65.7', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '差點到目標就噴上去', timestamp: 1736467200002 },
+                { id: 's10', date: '2025-01-10', item: '光寶科 2301', type: '多', rank: '銅單', entryPrice: '168', units: '1', tp: '174', sl: '164', exitPrice: '170.5', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: false, news: false, reflection: '跌破171大量套保出掉', timestamp: 1736467200003 },
+                { id: 's11', date: '2025-01-10', item: '士電 1503', type: '空', rank: '銅單', entryPrice: '176.5', units: '1', tp: '178', sl: '173.5', exitPrice: '175.5', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '當沖沖掉', timestamp: 1736467200004 },
+                { id: 's12', date: '2025-01-11', item: '凌華 6266', type: '空', rank: '銅單', entryPrice: '61.2', units: '1', tp: '60.5', sl: '61.5', exitPrice: '60.7', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '', timestamp: 1736553600000 },
+                { id: 's13', date: '2025-01-11', item: '文曄 3036', type: '多', rank: '銅單', entryPrice: '139.5', units: '1', tp: '143', sl: '132', exitPrice: '140.5', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: false, news: false, reflection: '', timestamp: 1736553600001 },
+                { id: 's14', date: '2025-01-11', item: '皇昌 2543', type: '空', rank: '銅單', entryPrice: '70.1', units: '1', tp: '69.0', sl: '70.8', exitPrice: '69.4', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '預估今天不會到VAL，提早平倉', timestamp: 1736553600002 },
+                { id: 's15', date: '2025-01-12', item: '茂綸 6227', type: '空', rank: '銅單', entryPrice: '90', units: '1', tp: '87.8', sl: '91', exitPrice: '89.4', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '台股當沖空單摸索中', timestamp: 1736640000000 },
+                { id: 's16', date: '2025-01-12', item: '欣興 3037', type: '多', rank: '銅單', entryPrice: '163.5', units: '1', tp: '173', sl: '159', exitPrice: '173', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: false, reflection: '出國賣掉的', timestamp: 1736640000001 },
+                { id: 's17', date: '2025-01-12', item: '盟立 2464', type: '空', rank: '銀單', entryPrice: '66', units: '1', tp: '64.7', sl: '66.9', exitPrice: '66.3', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '進場點不好，學習中', timestamp: 1736640000002 },
+                { id: 's18', date: '2025-01-12', item: '緯創 3231', type: '多', rank: '銅單', entryPrice: '144.5', units: '1', tp: '152', sl: '142', exitPrice: '142', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: false, reflection: '要看波段，不能看短線', timestamp: 1736640000003 },
+                { id: 's19', date: '2025-01-12', item: '矽格 6257', type: '多', rank: '銅單', entryPrice: '98.5', units: '1', tp: '100', sl: '97', exitPrice: '96.9', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: false, reflection: '', timestamp: 1736640000004 },
+                { id: 's20', date: '2025-01-13', item: '王品 2727', type: '多', rank: '銅單', entryPrice: '223', units: '1', tp: '219', sl: '227', exitPrice: '222.5', conditions: [], fundamental: false, news: false, reflection: '研究空單打法', timestamp: 1736726400000 },
+                { id: 's21', date: '2025-01-13', item: '神達 3706', type: '空', rank: '銅單', entryPrice: '93.7', units: '1', tp: '99', sl: '91.5', exitPrice: '92.1', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '白癡台股日內玩不了', timestamp: 1736726400001 },
+                { id: 's22', date: '2025-01-13', item: '凌華 6166', type: '空', rank: '銅單', entryPrice: '60', units: '1', tp: '58', sl: '61', exitPrice: '60.3', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '都要等隔天', timestamp: 1736726400002 },
+                { id: 's23', date: '2025-01-13', item: '鴻準 2354', type: '多', rank: '銅單', entryPrice: '70.7', units: '1', tp: '74', sl: '65', exitPrice: '63', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: false, news: false, reflection: '還是玩黃金實在', timestamp: 1736726400003 },
+                { id: 's24', date: '2025-12-26', item: '鴻準 2354', type: '空', rank: '銅單', entryPrice: '67.1', units: '1', tp: '60', sl: '70', exitPrice: '69', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '空的不好，均線交錯', timestamp: 1766707200000 },
+            ],
+            gold: [
+                { id: 'g1', date: '2025-01-01', item: '黃金 XAUUSD', type: '空', rank: '銀單', entryPrice: '4025', units: '0.01', tp: '3919', sl: '4035', exitPrice: '4020', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: true, reflection: '開會議先跑，資訊要檢查', timestamp: 1735689600000 },
+                { id: 'g2', date: '2025-01-02', item: '黃金 XAUUSD', type: '空', rank: '銀單', entryPrice: '4014', units: '0.01', tp: '3970', sl: '4030', exitPrice: '3990', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '量會移動，做黃金要更新VP', timestamp: 1735776000000 },
+                { id: 'g3', date: '2025-11-22', item: '黃金 XAUUSD', type: '空', rank: '銀單', entryPrice: '4069', units: '0.01', tp: '4030', sl: '4106', exitPrice: '4065', conditions: ['Vegas通道往下', 'RSI死亡交叉'], reflection: '15分空頭回調', timestamp: 1763769600000 },
+                { id: 'g4', date: '2025-12-04', item: '黃金 XAUUSD', type: '多', rank: '銀單', entryPrice: '4191', units: '0.01', tp: '4212', sl: '4160', exitPrice: '4212', conditions: ['Vegas通道往上', 'RSI黃金交叉'], reflection: '碰到POC就跌，釐清原因', timestamp: 1764720000000 },
+                { id: 'g5', date: '2025-12-05', item: '黃金 XAUUSD', type: '多', rank: '銅單', entryPrice: '4202', units: '0.01', tp: '4250', sl: '4190', exitPrice: '4250', conditions: ['Vegas通道往上', 'RSI黃金交叉'], reflection: '剛碰到VAH就往下砸', timestamp: 1764806400000 },
+                { id: 'g6', date: '2025-12-09', item: '黃金 XAUUSD', type: '多', rank: '金單', entryPrice: '4183', units: '0.02', tp: '4250', sl: '4170', exitPrice: '4250', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: true, reflection: '消息面或基本面調整預期', timestamp: 1765152000000 },
+                { id: 'g7', date: '2025-12-11', item: '黃金 XAUUSD', type: '多', rank: '銅單', entryPrice: '4211', units: '0.02', tp: '4250', sl: '4170', exitPrice: '4250', conditions: ['Vegas通道往上', 'RSI黃金交叉'], news: true, reflection: '符合鮑爾降息消息面加倉', timestamp: 1765324800000 },
+                { id: 'g8', date: '2025-12-12', item: '黃金 XAUUSD', type: '多', rank: '金單', entryPrice: '4239', units: '0.01', tp: '4193', sl: '4250', exitPrice: '4250', conditions: [], reflection: 'VAH高點M頭止損', timestamp: 1765411200000 },
+                { id: 'g9', date: '2025-12-12', item: '黃金 XAUUSD', type: '空', rank: '銅單', entryPrice: '3994', units: '0.01', tp: '3919', sl: '4020', exitPrice: '4020', conditions: [], reflection: 'RSI過熱插針止損', timestamp: 1765411200001 },
+                { id: 'g10', date: '2025-12-13', item: '黃金 XAUUSD', type: '空', rank: '銀單', entryPrice: '3994', units: '0.01', tp: '3045', sl: '4010', exitPrice: '4010', conditions: ['Vegas通道往下', 'RSI死亡交叉'], reflection: '等待均線下降訊號', timestamp: 1765497600000 },
+                { id: 'g11', date: '2025-12-08', item: '黃金 XAUUSD', type: '多', rank: '銅單', entryPrice: '4209', units: '2', tp: '4250', sl: '4190', exitPrice: '4190', conditions: ['Vegas通道往上', 'RSI黃金交叉'], reflection: 'POC與VAL之間勝率高', timestamp: 1765065600000 },
+                { id: 'g12', date: '2025-12-08', item: '黃金 XAUUSD', type: '多', rank: '銅單', entryPrice: '4210', units: '2', tp: '4250', sl: '4190', exitPrice: '4190', conditions: ['Vegas通道往上', 'RSI黃金交叉'], reflection: 'POC進單一單位就好', timestamp: 1765065600001 },
+                { id: 'g13', date: '2025-12-10', item: '黃金 XAUUSD', type: '多', rank: '金單', entryPrice: '4197', units: '0.02', tp: '4212', sl: '4185', exitPrice: '4185', conditions: ['Vegas通道往上', 'RSI黃金交叉'], reflection: '降息不降息波動大，停損要後放', timestamp: 1765238400000 },
+                { id: 'g14', date: '2025-12-31', item: '黃金 XAUUSD', type: '多', rank: '銀單', entryPrice: '4352', units: '0.02', tp: '4395', sl: '4320', exitPrice: '4320', conditions: ['Vegas通道往上', 'RSI黃金交叉'], reflection: '不能貪心，遵守到POC才做單', timestamp: 1767139200000 },
+            ],
+            generalInsights: ''
         };
 
         let tradingData = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -213,34 +255,27 @@
         }
 
         /**
-         * 2. 邏輯函數（R + PnL）
+         * 2. 核心邏輯
          */
         function determineResult(type, entry, exit) {
             const e = parseFloat(entry);
             const x = parseFloat(exit);
             if (isNaN(e) || isNaN(x)) return "待定";
-            if (type === '多') {
-                return x > e ? "獲利" : (x < e ? "虧損" : "平手");
-            } else {
-                return x < e ? "獲利" : (x > e ? "虧損" : "平手");
-            }
+            if (type === '多') return x > e ? "獲利" : (x < e ? "虧損" : "平手");
+            else return x < e ? "獲利" : (x > e ? "虧損" : "平手");
         }
 
         function calculateTradeScore(record) {
             let score = 0;
-            // 等級分數：金40、銀25、銅10
             if (record.rank === '金單') score += 40;
             else if (record.rank === '銀單') score += 25;
             else if (record.rank === '銅單') score += 10;
-            // 技術條件：每個 +10 分（最多2個）
             score += (record.conditions || []).length * 10;
-            // 基本面和消息面：每個 +20 分（調整為20使滿分為100）
             if (record.fundamental) score += 20;
             if (record.news) score += 20;
             return Math.min(score, 100);
         }
 
-        // 理論 R（用 TP / SL）
         function calculateRR(type, entry, tp, sl) {
             const e = parseFloat(entry);
             const t = parseFloat(tp);
@@ -250,14 +285,37 @@
             return rr > 0 ? rr.toFixed(1) : "0.0";
         }
 
-        // 實際 R（用出場價）
         function calculateFinalRR(type, entry, sl, exit) {
             const e = parseFloat(entry);
             const s = parseFloat(sl);
             const x = parseFloat(exit);
             if (isNaN(e) || isNaN(s) || isNaN(x) || e === s) return 0;
-            let frr = (type === '多') ? (x - e) / (e - s) : (e - x) / (s - e);
-            return frr;
+            return (type === '多') ? (x - e) / (e - s) : (e - x) / (s - e);
+        }
+
+        function calculateStockPnL(record) {
+            const e = parseFloat(record.entryPrice);
+            const x = parseFloat(record.exitPrice);
+            if (isNaN(e) || isNaN(x)) return 0;
+            const units = parseFloat(record.units || '1');
+            const diff = (record.type === '多') ? (x - e) : (e - x);
+            const totalFees = (e * units * 1000 * 0.001425) + (x * units * 1000 * 0.001425);
+            return (diff * 1000 * units) - totalFees;
+        }
+
+        function calculateGoldPnL(record) {
+            const e = parseFloat(record.entryPrice);
+            const x = parseFloat(record.exitPrice);
+            if (isNaN(e) || isNaN(x)) return 0;
+            const units = parseFloat(record.units || '0.01');
+            const diff = (record.type === '多') ? (x - e) : (e - x);
+            const totalFees = 0.06 * 2 * (units / 0.01);
+            return (diff * 100 * units) - totalFees;
+        }
+
+        function calculatePnL(record, marketType) {
+            if (!record.exitPrice || record.exitPrice.toString().trim() === '') return 0;
+            return (marketType === 'gold') ? calculateGoldPnL(record) : calculateStockPnL(record);
         }
 
         function getRankClass(rank) {
@@ -278,57 +336,7 @@
         };
 
         /**
-         * 【修正1】黃金損益計算 - 修正正確公式
-         * Bybit XAUUSD: 1 lot = 100 oz, 價格變動 1.0 = 100 USD
-         * 實際計算: (價格差) × 100 × 手數
-         */
-        function calculateStockPnL(record) {
-            const e = parseFloat(record.entryPrice);
-            const x = parseFloat(record.exitPrice);
-            if (isNaN(e) || isNaN(x)) return 0;
-
-            const units = parseFloat(record.units || '1');
-            const diff = (record.type === '多') ? (x - e) : (e - x);
-            const grossPnL = diff * 1000 * units; // TWD
-            
-            // 計算手續費（買進 + 賣出，無折讓）
-            const entryFee = e * units * 1000 * 0.001425; // 0.1425%
-            const exitFee = x * units * 1000 * 0.001425;
-            const totalFees = entryFee + exitFee;
-            
-            return grossPnL - totalFees; // 扣除手續費
-        }
-
-        /**
-         * 【修正2】黃金損益計算改為正確的 Bybit 公式
-         * 價格變動 1.0 = 100 USD (每 1 lot)
-         * 所以: PnL = (exit - entry) × 100 × units (for long)
-         *      = (entry - exit) × 100 × units (for short)
-         */
-        function calculateGoldPnL(record) {
-            const e = parseFloat(record.entryPrice);
-            const x = parseFloat(record.exitPrice);
-            if (isNaN(e) || isNaN(x)) return 0;
-
-            const units = parseFloat(record.units || '0.01');
-            const diff = (record.type === '多') ? (x - e) : (e - x);
-            const grossPnL = diff * 100 * units; // USD
-            
-            // 黃金手續費：0.01手 = 0.06 USD
-            // 買進 + 賣出各 0.06 USD
-            const totalFees = 0.06 * 2 * (units / 0.01); // 根據手數倍數計算
-            
-            return grossPnL - totalFees; // 扣除手續費
-        }
-
-        function calculatePnL(record, marketType) {
-            if (!record.exitPrice || record.exitPrice.toString().trim() === '') return 0;
-            if (marketType === 'gold') return calculateGoldPnL(record);
-            return calculateStockPnL(record);
-        }
-
-        /**
-         * 3. 渲染與路由
+         * 3. 渲染邏輯
          */
         window.currentFilter = '全部';
 
@@ -353,24 +361,24 @@
                 <div class="page-transition">
                     <div class="mb-14 mt-4 text-center md:text-left">
                         <h2 class="text-5xl font-black text-white tracking-tighter">數據儀表板</h2>
-                        <p class="text-xl text-slate-400 mt-4 font-medium italic">Vegas + VP 交易紀律的核心統計</p>
+                        <p class="text-xl text-slate-400 mt-4 font-medium italic">歷史紀錄備份已載入</p>
                     </div>
 
                     <div class="grid md:grid-cols-3 gap-8">
-                        <div onclick="navigateTo('details', 'stock')" class="card-stock group p-12 rounded-[3rem] shadow-2xl cursor-pointer transform hover:-translate-y-3 transition-all duration-300 text-white relative overflow-hidden border border-white/10">
+                        <div onclick="navigateTo('details', 'stock')" class="card-stock group p-12 rounded-[3rem] shadow-2xl cursor-pointer transform hover:-translate-y-3 transition-all duration-300 text-white relative border border-white/10">
                             <i class="fas fa-chart-line text-6xl mb-8 block"></i>
                             <h3 class="text-3xl font-black">台股市場紀錄</h3>
-                            <p class="text-blue-100 opacity-80 mt-2 font-bold">Stock Records</p>
+                            <p class="text-blue-100 opacity-80 mt-2 font-bold text-lg">Stock Records</p>
                         </div>
-                        <div onclick="navigateTo('details', 'gold')" class="card-gold group p-12 rounded-[3rem] shadow-2xl cursor-pointer transform hover:-translate-y-3 transition-all duration-300 text-white relative overflow-hidden border border-white/10">
+                        <div onclick="navigateTo('details', 'gold')" class="card-gold group p-12 rounded-[3rem] shadow-2xl cursor-pointer transform hover:-translate-y-3 transition-all duration-300 text-white relative border border-white/10">
                             <i class="fas fa-coins text-6xl mb-8 block"></i>
                             <h3 class="text-3xl font-black">黃金市場紀錄</h3>
-                            <p class="text-amber-100 opacity-80 mt-2 font-bold">XAUUSD Records</p>
+                            <p class="text-amber-100 opacity-80 mt-2 font-bold text-lg">XAUUSD Records</p>
                         </div>
-                        <div onclick="navigateTo('strategy')" class="card-strategy group p-12 rounded-[3rem] shadow-2xl cursor-pointer transform hover:-translate-y-3 transition-all duration-300 text-white relative overflow-hidden border border-white/10">
+                        <div onclick="navigateTo('strategy')" class="card-strategy group p-12 rounded-[3rem] shadow-2xl cursor-pointer transform hover:-translate-y-3 transition-all duration-300 text-white relative border border-white/10">
                             <i class="fas fa-shield-halved text-6xl mb-8 block text-purple-200"></i>
                             <h3 class="text-3xl font-black">交易策略框架</h3>
-                            <p class="text-purple-100 opacity-80 mt-2 font-bold">Core Strategy</p>
+                            <p class="text-purple-100 opacity-80 mt-2 font-bold text-lg">Core Strategy</p>
                         </div>
                     </div>
                 </div>
@@ -382,32 +390,20 @@
             const data = tradingData[marketType] || [];
             
             const settledAll = data.filter(d => d.exitPrice && d.exitPrice.toString().trim() !== "");
-            const winsAll = settledAll.filter(
-                d => determineResult(d.type, d.entryPrice, d.exitPrice) === '獲利'
-            ).length;
-
-            const winRate = settledAll.length > 0
-                ? ((winsAll / settledAll.length) * 100).toFixed(1)
-                : '0.0';
+            const winsAll = settledAll.filter(d => determineResult(d.type, d.entryPrice, d.exitPrice) === '獲利').length;
+            const winRate = settledAll.length > 0 ? ((winsAll / settledAll.length) * 100).toFixed(1) : '0.0';
 
             let totalR = 0;
-            settledAll.forEach(d => {
-                totalR += calculateFinalRR(d.type, d.entryPrice, d.sl, d.exitPrice);
-            });
-
             let totalPnL = 0;
             settledAll.forEach(d => {
+                totalR += calculateFinalRR(d.type, d.entryPrice, d.sl, d.exitPrice);
                 totalPnL += calculatePnL(d, marketType);
             });
 
             let filteredData = data;
-            if (filter === '未結單') {
-                filteredData = data.filter(d => !d.exitPrice || d.exitPrice.toString().trim() === "");
-            } else if (filter === '獲利單') {
-                filteredData = data.filter(d => d.exitPrice && determineResult(d.type, d.entryPrice, d.exitPrice) === '獲利');
-            } else if (filter === '虧損單') {
-                filteredData = data.filter(d => d.exitPrice && determineResult(d.type, d.entryPrice, d.exitPrice) === '虧損');
-            }
+            if (filter === '未結單') filteredData = data.filter(d => !d.exitPrice || d.exitPrice.toString().trim() === "");
+            else if (filter === '獲利單') filteredData = data.filter(d => d.exitPrice && determineResult(d.type, d.entryPrice, d.exitPrice) === '獲利');
+            else if (filter === '虧損單') filteredData = data.filter(d => d.exitPrice && determineResult(d.type, d.entryPrice, d.exitPrice) === '虧損');
 
             const pnlUnit = marketType === 'gold' ? 'USD' : 'TWD';
 
@@ -418,11 +414,9 @@
                             <button onclick="navigateTo('home')" class="text-slate-500 hover:text-blue-400 mb-4 flex items-center gap-3 text-lg font-black transition-all">
                                 <i class="fas fa-chevron-left"></i> 返回首頁
                             </button>
-                            <h2 class="text-4xl font-black text-white tracking-tight">
-                                ${marketType === 'gold' ? '黃金 XAUUSD' : '台股市場'}
-                            </h2>
+                            <h2 class="text-4xl font-black text-white tracking-tight">${marketType === 'gold' ? '黃金 XAUUSD' : '台股市場'}</h2>
                         </div>
-                        <button onclick="navigateTo('form', {type: '${marketType}'})" class="bg-blue-600 hover:bg-blue-500 text-white px-10 py-5 rounded-[2rem] flex items-center gap-3 shadow-2xl transition-all active:scale-95 font-black text-xl border border-blue-400/30">
+                        <button onclick="navigateTo('form', {type: '${marketType}'})" class="bg-blue-600 hover:bg-blue-500 text-white px-10 py-5 rounded-[2rem] flex items-center gap-3 shadow-2xl active:scale-95 font-black text-xl border border-blue-400/30">
                             <i class="fas fa-plus"></i> 新增紀錄
                         </button>
                     </div>
@@ -431,25 +425,18 @@
                         <div class="bg-slate-900 p-8 rounded-[3rem] border-2 border-slate-800 shadow-sm text-center">
                             <p class="text-sm font-black text-slate-500 mb-1 uppercase tracking-widest text-xs">勝率</p>
                             <span class="text-4xl font-black text-blue-500">${winRate}%</span>
-                            <p class="text-slate-500 mt-2 text-xs">只統計已結單</p>
                         </div>
-
                         <div class="bg-slate-900 p-8 rounded-[3rem] border-2 border-slate-800 shadow-sm text-center">
                             <p class="text-sm font-black text-slate-500 mb-1 uppercase tracking-widest text-xs">單數</p>
                             <span class="text-4xl font-black text-slate-200">${data.length}</span>
-                            <p class="text-slate-500 mt-2 text-xs">含已結單與持倉</p>
                         </div>
-
                         <div class="bg-slate-900 p-8 rounded-[3rem] border-2 border-slate-800 shadow-sm text-center">
                             <p class="text-sm font-black text-slate-500 mb-1 uppercase tracking-widest text-xs">總 R 數</p>
-                            <span class="text-4xl font-black ${totalR >= 0 ? 'text-red-400' : 'text-green-400'}">${totalR.toFixed(1)} R</span>
-                            <p class="text-slate-500 mt-2 text-xs">累積實際 R（已結單）</p>
+                            <span class="text-4xl font-black ${totalR >= 0 ? 'text-green-500' : 'text-red-400'}">${totalR.toFixed(1)} R</span>
                         </div>
-
                         <div class="bg-slate-900 p-8 rounded-[3rem] border-2 border-slate-800 shadow-sm text-center">
-                            <p class="text-sm font-black text-slate-500 mb-1 uppercase tracking-widest text-xs">實際盈虧</p>
-                            <span class="text-3xl font-black ${totalPnL >= 0 ? 'text-red-400' : 'text-green-400'}">${totalPnL.toFixed(2)} ${pnlUnit}</span>
-                            <p class="text-slate-500 mt-2 text-xs">依單位與價差換算</p>
+                            <p class="text-sm font-black text-slate-500 mb-1 uppercase tracking-widest text-xs">實際損益</p>
+                            <span class="text-3xl font-black ${totalPnL >= 0 ? 'text-green-500' : 'text-red-400'}">${totalPnL.toFixed(2)}</span>
                         </div>
                     </div>
 
@@ -463,10 +450,6 @@
                     </div>
 
                     <div class="space-y-8">
-                        ${filteredData.length === 0 
-                            ? `<div class="p-32 text-center text-slate-600 text-2xl italic bg-slate-900 rounded-[4rem] border border-dashed border-slate-800">無符合條件的紀錄</div>`
-                            : ''
-                        }
                         ${filteredData.map(item => {
                             const result = determineResult(item.type, item.entryPrice, item.exitPrice);
                             const isSettled = item.exitPrice && item.exitPrice.toString().trim() !== "";
@@ -479,9 +462,7 @@
                                         <div>
                                             <div class="flex items-center gap-4 mb-3">
                                                 <span class="text-sm font-bold text-slate-500">${item.date}</span>
-                                                <span class="px-4 py-1.5 rounded-xl text-xs font-black border ${getRankClass(item.rank)}">
-                                                    ${item.rank || '未分級'}
-                                                </span>
+                                                <span class="px-4 py-1 rounded-xl text-xs font-black border ${getRankClass(item.rank)}">${item.rank || '未分級'}</span>
                                                 <span class="score-badge">Score: ${calculateTradeScore(item)}</span>
                                                 <span class="text-xs font-black ${isSettled ? 'text-blue-400' : 'text-amber-500'}">
                                                     ${isSettled ? '已結單' : '持倉中'}
@@ -493,43 +474,20 @@
                                             </h3>
                                         </div>
                                         <div class="flex gap-4">
-                                            <button onclick="navigateTo('form', {type: '${marketType}', id: '${item.id}'})" class="text-slate-600 hover:text-blue-400 transition-all p-4 text-2xl">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button onclick="openDeleteModal('${marketType}', '${item.id}')" class="text-slate-600 hover:text-red-500 transition-all p-4 text-2xl">
-                                                <i class="fas fa-trash-can"></i>
-                                            </button>
+                                            <button onclick="navigateTo('form', {type: '${marketType}', id: '${item.id}'})" class="text-slate-600 hover:text-blue-400 transition-all p-4 text-2xl"><i class="fas fa-edit"></i></button>
+                                            <button onclick="openDeleteModal('${marketType}', '${item.id}')" class="text-slate-600 hover:text-red-500 transition-all p-4 text-2xl"><i class="fas fa-trash-can"></i></button>
                                         </div>
                                     </div>
                                     
-                                    <div class="grid grid-cols-2 md:grid-cols-5 gap-10 mb-10">
-                                        <div>
-                                            <p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">進場價 / 單位</p>
-                                            <p class="font-mono font-black text-slate-200 text-2xl">${item.entryPrice} / ${item.units}</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">出場價格</p>
-                                            <p class="font-mono font-black text-blue-400 text-2xl">${item.exitPrice || '-'}</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">預期盈虧比 (R)</p>
-                                            <p class="font-mono font-black text-purple-400 text-2xl">
-                                                ${calculateRR(item.type, item.entryPrice, item.tp, item.sl)} R
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">判定結果</p>
-                                            <p class="font-black text-2xl ${result === '獲利' ? 'text-red-400' : (result === '虧損' ? 'text-green-400' : 'text-slate-400')}">
-                                                ${result} ${isSettled ? '(' + finalR.toFixed(1) + 'R)' : ''}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">實際損益</p>
-                                            <p class="font-black text-2xl ${pnl >= 0 ? 'text-red-400' : 'text-green-400'}">${pnl.toFixed(2)} ${pnlUnit}</p>
-                                        </div>
+                                    <div class="grid grid-cols-2 md:grid-cols-5 gap-10 mb-10 text-center">
+                                        <div><p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">進場 / 單位</p><p class="font-mono font-black text-slate-200 text-2xl">${item.entryPrice} / ${item.units}</p></div>
+                                        <div><p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">出場價格</p><p class="font-mono font-black text-blue-400 text-2xl">${item.exitPrice || '-'}</p></div>
+                                        <div><p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">實際 R 數</p><p class="font-mono font-black text-purple-400 text-2xl">${isSettled ? finalR.toFixed(1) : '-'}</p></div>
+                                        <div><p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">判定結果</p><p class="font-black text-2xl ${result === '獲利' ? 'text-red-400' : (result === '虧損' ? 'text-green-400' : 'text-slate-400')}">${result}</p></div>
+                                        <div><p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">損益 (${pnlUnit})</p><p class="font-black text-2xl ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}">${isSettled ? pnl.toFixed(2) : '-'}</p></div>
                                     </div>
 
-                                    <div class="bg-slate-800/50 p-8 rounded-[2rem] text-lg text-slate-400 leading-relaxed border border-slate-700/50">
+                                    <div class="bg-slate-800/50 p-8 rounded-[2rem] text-lg text-slate-400 border border-slate-700/50">
                                         <strong class="text-slate-200 font-black">回測與反思：</strong> ${item.reflection || '無備註'}
                                     </div>
                                 </div>
@@ -540,36 +498,17 @@
             `;
         }
 
-        /**
-         * 【修正4】renderForm 函數 - 修正 isEdit 判斷邏輯
-         */
         function renderForm(container, marketType, id = undefined) {
-            // 【修正5】正確判斷是否為編輯模式：id 必須是字串且不為空
             const isEdit = typeof id === 'string' && id !== '';
             const isGold = marketType === 'gold';
+            let record = isEdit ? tradingData[marketType].find(r => r.id === id) : null;
             
-            let record = null;
-            if (isEdit) {
-                record = tradingData[marketType].find(r => r.id === id);
-            }
-            
-            // 如果沒找到或不是編輯模式，就給預設值
             if (!record) {
                 record = {
-                    id: Date.now().toString(),
-                    date: new Date().toISOString().split('T')[0],
-                    item: isGold ? '黃金 XAUUSD' : '',
-                    type: '多',
-                    rank: '',
-                    entryPrice: '',
-                    units: isGold ? '0.01' : '1',
-                    tp: '',
-                    sl: '',
-                    exitPrice: '',
-                    conditions: [],
-                    fundamental: false,
-                    news: false,
-                    reflection: ''
+                    id: Date.now().toString(), date: new Date().toISOString().split('T')[0],
+                    item: isGold ? '黃金 XAUUSD' : '', type: '多', rank: '',
+                    entryPrice: '', units: isGold ? '0.01' : '1',
+                    tp: '', sl: '', exitPrice: '', conditions: [], fundamental: false, news: false, reflection: ''
                 };
             }
 
@@ -580,16 +519,13 @@
                     </button>
 
                     <div class="bg-slate-900 rounded-[4rem] shadow-2xl border border-slate-800 overflow-hidden">
-                        <div class="bg-slate-800/50 px-14 py-12 border-b border-slate-800">
-                            <h2 class="text-4xl font-black text-white text-center">${isEdit ? '編輯' : '新增'} ${isGold ? '黃金' : '台股'} 紀錄</h2>
+                        <div class="bg-slate-800/50 px-14 py-12 border-b border-slate-800 text-center">
+                            <h2 class="text-4xl font-black text-white">${isEdit ? '編輯' : '新增'} ${isGold ? '黃金' : '台股'} 紀錄</h2>
                         </div>
                         
                         <form id="trading-form" class="p-14 space-y-14">
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-                                <div>
-                                    <label class="form-label">進場日期</label>
-                                    <input type="date" name="date" value="${record.date}" class="form-input" required>
-                                </div>
+                                <div><label class="form-label">進場日期</label><input type="date" name="date" value="${record.date}" class="form-input" required></div>
                                 <div class="md:col-span-1">
                                     <label class="form-label">交易標的</label>
                                     ${!isGold ? `
@@ -606,7 +542,7 @@
                                         <input type="text" class="form-input" placeholder="手動標的名稱" value="${record.item}" oninput="document.getElementById('item-hidden-input').value = this.value">
                                     </div>
                                     ` : `
-                                    <input type="text" value="黃金 XAUUSD" class="form-input" readonly>
+                                    <input type="text" value="黃金 XAUUSD" class="form-input bg-slate-100 text-black font-bold" readonly>
                                     <input type="hidden" name="item" value="黃金 XAUUSD">
                                     `}
                                 </div>
@@ -630,44 +566,28 @@
                                 <div class="grid md:grid-cols-2 gap-6">
                                     <label class="checkbox-card">
                                         <input type="checkbox" name="fundamental" ${record.fundamental ? 'checked' : ''} onchange="refreshCalculations()">
-                                        <div class="flex-1 flex justify-between items-center">
-                                            <div class="flex flex-col">
-                                                <span class="font-black text-slate-200 text-lg">基本面加分</span>
-                                                <span class="text-xs text-slate-500 font-bold">營收與消息面良好 +20 Pts</span>
-                                            </div>
+                                        <div class="flex flex-col">
+                                            <span class="font-black text-slate-200 text-lg">基本面加分</span>
+                                            <span class="text-xs text-slate-500 font-bold">營收與趨勢良好 +20 Pts</span>
                                         </div>
                                     </label>
                                     <label class="checkbox-card">
                                         <input type="checkbox" name="news" ${record.news ? 'checked' : ''} onchange="refreshCalculations()">
-                                        <div class="flex-1 flex justify-between items-center">
-                                            <div class="flex flex-col">
-                                                <span class="font-black text-slate-200 text-lg">消息面加分</span>
-                                                <span class="text-xs text-slate-500 font-bold">地緣政治或籌碼 +20 Pts</span>
-                                            </div>
+                                        <div class="flex flex-col">
+                                            <span class="font-black text-slate-200 text-lg">消息面加分</span>
+                                            <span class="text-xs text-slate-500 font-bold">重大新聞或籌碼支撐 +20 Pts</span>
                                         </div>
                                     </label>
                                 </div>
                             </section>
 
                             <section>
-                                <h3 class="text-xl font-black text-blue-500 mb-8 border-b border-slate-800 pb-3 uppercase tracking-widest">交易數據分析</h3>
+                                <h3 class="text-xl font-black text-blue-500 mb-8 border-b border-slate-800 pb-3 uppercase tracking-widest">數據分析</h3>
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
-                                    <div>
-                                        <label class="form-label">單位</label>
-                                        <input type="text" name="units" value="${record.units}" class="form-input">
-                                    </div>
-                                    <div>
-                                        <label class="form-label">進場價格</label>
-                                        <input type="text" id="entry-price" name="entryPrice" value="${record.entryPrice}" class="form-input" placeholder="請輸入價格" oninput="refreshCalculations()" required>
-                                    </div>
-                                    <div>
-                                        <label class="form-label">停利 TP</label>
-                                        <input type="text" id="tp-price" name="tp" value="${record.tp}" class="form-input" placeholder="獲利目標" oninput="refreshCalculations()">
-                                    </div>
-                                    <div>
-                                        <label class="form-label">停損 SL</label>
-                                        <input type="text" id="sl-price" name="sl" value="${record.sl}" class="form-input" placeholder="防守位" oninput="refreshCalculations()">
-                                    </div>
+                                    <div><label class="form-label">單位</label><input type="text" name="units" value="${record.units}" class="form-input"></div>
+                                    <div><label class="form-label">進場價格</label><input type="text" id="entry-price" name="entryPrice" value="${record.entryPrice}" class="form-input" placeholder="價格" oninput="refreshCalculations()" required></div>
+                                    <div><label class="form-label">停利 TP</label><input type="text" id="tp-price" name="tp" value="${record.tp}" class="form-input" placeholder="目標位" oninput="refreshCalculations()"></div>
+                                    <div><label class="form-label">停損 SL</label><input type="text" id="sl-price" name="sl" value="${record.sl}" class="form-input" placeholder="防守位" oninput="refreshCalculations()"></div>
                                 </div>
                                 <div class="mt-10">
                                     <label class="form-label text-blue-400 text-xs uppercase tracking-widest font-black">出場價格 (有數值即自動判定結單)</label>
@@ -676,14 +596,8 @@
                                 
                                 <div class="mt-10 bg-slate-800 text-white p-10 rounded-[2.5rem] flex flex-col md:flex-row justify-between items-center shadow-inner border border-slate-700">
                                     <div class="flex gap-10">
-                                        <div>
-                                            <span class="text-slate-500 font-bold block mb-1 uppercase text-xs">預計盈虧比</span>
-                                            <span id="rr-preview" class="text-3xl font-black text-purple-400">0.0 R</span>
-                                        </div>
-                                        <div>
-                                            <span class="text-slate-500 font-bold block mb-1 uppercase text-xs">判定結果</span>
-                                            <span id="result-preview" class="text-3xl font-black text-white">-</span>
-                                        </div>
+                                        <div><span class="text-slate-500 font-bold block mb-1 uppercase text-xs">預計盈虧比</span><span id="rr-preview" class="text-3xl font-black text-purple-400">0.0 R</span></div>
+                                        <div><span class="text-slate-500 font-bold block mb-1 uppercase text-xs">判定結果</span><span id="result-preview" class="text-3xl font-black text-white">-</span></div>
                                     </div>
                                     <div class="text-center md:text-right">
                                         <span class="text-slate-500 font-bold block mb-1 uppercase text-xs">綜合得分</span>
@@ -707,9 +621,6 @@
                 </div>
             `;
             updateFormUI(record.type, marketType, record.conditions, record.rank);
-            // 恢復 fundamental 和 news 的勾選狀態
-            if (record.fundamental) document.querySelector('input[name="fundamental"]').checked = true;
-            if (record.news) document.querySelector('input[name="news"]').checked = true;
             refreshCalculations();
         }
 
@@ -757,38 +668,24 @@
             document.getElementById('score-preview').innerText = score + " Pts";
         };
 
-        /**
-         * 5. 刪除功能
-         */
         let deleteTarget = { market: null, id: null };
-
         window.openDeleteModal = (market, id) => {
             deleteTarget = { market, id };
             document.getElementById('delete-modal').style.display = 'flex';
         };
-
-        window.closeDeleteModal = () => {
-            document.getElementById('delete-modal').style.display = 'none';
-        };
+        window.closeDeleteModal = () => document.getElementById('delete-modal').style.display = 'none';
 
         document.getElementById('confirm-delete-btn').onclick = () => {
             const { market, id } = deleteTarget;
-            if (market && id) {
-                tradingData[market] = tradingData[market].filter(r => r.id !== id);
-                saveData();
-                closeDeleteModal();
-                navigateTo('details', market);
-            }
+            tradingData[market] = tradingData[market].filter(r => r.id !== id);
+            saveData();
+            closeDeleteModal();
+            navigateTo('details', market);
         };
 
-        /**
-         * 【修正6】handleSave 函數 - 修正 id 邏輯
-         */
         window.handleSave = (market, idStr) => {
             const form = document.getElementById('trading-form');
             const formData = new FormData(form);
-            
-            // 【修正7】正確判斷：如果 idStr 為空字串或未傳，才生成新 id
             const finalId = (idStr && idStr !== '') ? idStr : Date.now().toString();
             
             const record = {
@@ -809,13 +706,9 @@
                 timestamp: Date.now()
             };
             
-            // 【修正8】使用 finalId 判斷，避免空字串被當成有效 id
             const index = tradingData[market].findIndex(r => r.id === finalId);
-            if (index > -1) {
-                tradingData[market][index] = record;
-            } else {
-                tradingData[market].unshift(record);
-            }
+            if (index > -1) tradingData[market][index] = record;
+            else tradingData[market].unshift(record);
             
             saveData();
             navigateTo('details', market);
@@ -831,15 +724,45 @@
                         <div class="bg-blue-600 text-white p-6 rounded-[2.5rem] shadow-2xl"><i class="fas fa-scroll text-4xl"></i></div>
                         <div><h2 class="text-4xl font-black text-white">核心交易策略框架</h2><p class="text-xl text-slate-500 font-bold">四大支柱：從趨勢到技術執行</p></div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
                         <div class="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-sm"><h3 class="text-2xl font-black text-blue-500 mb-6">1. 趨勢確認 (Trend)</h3><p class="text-slate-400 text-lg">依據大時區 Vegas 通道。價格在通道之上且通道向上為多頭；反之為空頭。</p></div>
                         <div class="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-sm"><h3 class="text-2xl font-black text-blue-500 mb-6">2. 基本面加分 (Fundamental)</h3><p class="text-slate-400 text-lg">觀察營收與消息面。良好的基本面決定了持倉信心。</p></div>
-                        <div class="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-sm"><h3 class="text-2xl font-black text-blue-500 mb-6">3. 消息面加分 (News)</h3><p class="text-slate-400 text-lg">關注地緣政治或法人籌碼，消息面常是脫離成本區的觸媒。</p></div>
+                        <div class="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-sm"><h3 class="text-2xl font-black text-blue-500 mb-6">3. 消息面加分 (News)</h3><p class="text-slate-400 text-lg text-sm">關注地緣政治或法人籌碼，消息面常是脫離成本區的觸媒。</p></div>
                         <div class="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-sm"><h3 class="text-2xl font-black text-blue-500 mb-6">4. 技術執行 (Technical)</h3><p class="text-slate-400 text-lg">依據 VP 等級判斷入場，結合 RSI 交叉扣板機。嚴格執行 TP/SL。</p></div>
+                    </div>
+
+                    <!-- 新增：總體交易心得區塊 -->
+                    <div class="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-xl mt-10">
+                        <h3 class="text-2xl font-black text-blue-500 mb-6 flex items-center gap-3">
+                            <i class="fas fa-brain"></i> 總體交易心得與觀察
+                        </h3>
+                        <textarea id="general-insights-input" class="form-input" rows="15" placeholder="記錄您的市場觀察、心法修煉、或是對近期策略執行率的檢討...">${tradingData.generalInsights || ''}</textarea>
+                        <div class="mt-8">
+                            <button onclick="saveGeneralInsights()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-6 rounded-2xl shadow-2xl transition-all active:scale-95 text-xl tracking-widest">
+                                <i class="fas fa-save mr-2"></i> 儲存總體心得
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
         }
+
+        // 新增：儲存總體心得函數
+        window.saveGeneralInsights = () => {
+            const input = document.getElementById('general-insights-input');
+            if (input) {
+                tradingData.generalInsights = input.value;
+                saveData();
+                const btn = event.currentTarget;
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check mr-2"></i> 心得已儲存';
+                btn.classList.replace('bg-blue-600', 'bg-green-600');
+                setTimeout(() => {
+                    btn.innerHTML = originalContent;
+                    btn.classList.replace('bg-green-600', 'bg-blue-600');
+                }, 2000);
+            }
+        };
 
         window.switchInputMethod = (method) => {
             const autoBox = document.getElementById('auto-lookup-box');
