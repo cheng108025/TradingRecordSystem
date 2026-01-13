@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>個人交易追蹤系統</title>
+    <title>個人交易追蹤系統 - 資料完整保存版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -64,7 +64,7 @@
 
         .score-badge { @apply px-4 py-1.5 rounded-full text-sm font-black bg-blue-600 text-white shadow-lg; }
         
-        .input-tab { @apply px-6 py-3 rounded-xl text-sm font-black border-2 transition-all cursor-pointer; }
+        .input-tab { @apply px-6 py-3 rounded-xl text-sm font-black border-2 transition-all cursor-pointer select-none; }
         .input-tab.active { @apply bg-white border-white text-black shadow-lg; }
         .input-tab.inactive { @apply bg-slate-900 border-slate-800 text-slate-500 hover:bg-slate-800; }
 
@@ -136,12 +136,8 @@
         const STORAGE_KEY = 'vp_trading_tracker_v5_local_final';
         
         const initialData = {
-            stock: [
-            
-            ],
-            gold: [
-            
-            ],
+            stock: [],
+            gold: [],
             generalInsights: ''
         };
 
@@ -158,6 +154,48 @@
         function saveData() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(tradingData));
         }
+
+        // 匯出 / 匯入備份
+        window.exportTradingData = () => {
+            const dataStr = JSON.stringify(tradingData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const now = new Date();
+            const ts = now.toISOString().slice(0,19).replace(/[:T]/g, '-');
+            a.href = url;
+            a.download = `trading_backup_${ts}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        window.importTradingData = (file) => {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const obj = JSON.parse(e.target.result);
+                    if (!obj || !Array.isArray(obj.stock) || !Array.isArray(obj.gold)) {
+                        alert('匯入失敗：檔案格式不正確（缺少 stock/gold 陣列）。');
+                        return;
+                    }
+                    tradingData = {
+                        stock: obj.stock,
+                        gold: obj.gold,
+                        generalInsights: obj.generalInsights || ''
+                    };
+                    saveData();
+                    alert('匯入完成，已套用新的交易紀錄。');
+                    navigateTo('home');
+                } catch (err) {
+                    console.error(err);
+                    alert('匯入失敗：檔案內容不是合法的 JSON。');
+                }
+            };
+            reader.readAsText(file, 'utf-8');
+        };
 
         /** 2. 核心邏輯 **/
         function determineResult(type, entry, exit) {
@@ -242,7 +280,7 @@
                         <h2 class="text-5xl font-black text-white tracking-tighter">數據儀表板</h2>
                         <p class="text-xl text-slate-400 mt-4 font-medium italic">掌握趨勢，精準執行</p>
                     </div>
-                    <div class="grid md:grid-cols-3 gap-8">
+                    <div class="grid md:grid-cols-3 gap-8 mb-10">
                         <div onclick="navigateTo('details', 'stock')" class="card-stock group p-12 rounded-[3rem] shadow-2xl cursor-pointer transform hover:-translate-y-3 transition-all duration-300 text-white relative border border-white/10">
                             <i class="fas fa-chart-line text-6xl mb-8 block"></i>
                             <h3 class="text-3xl font-black">台股市場紀錄</h3>
@@ -257,6 +295,26 @@
                             <i class="fas fa-shield-halved text-6xl mb-8 block text-purple-200"></i>
                             <h3 class="text-3xl font-black">交易策略框架</h3>
                             <p class="text-purple-100 opacity-80 mt-2 font-bold text-lg">Core Strategy</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-6 flex flex-col md:flex-row items-center gap-4">
+                        <div class="flex-1 text-slate-300 text-sm md:text-base">
+                            <div class="font-black text-slate-100 mb-1">交易紀錄備份與還原</div>
+                            <div>匯出目前所有台股 / 黃金 / 心得紀錄為 JSON 檔，日後可在其他瀏覽器匯入還原。</div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onclick="exportTradingData()"
+                                class="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm md:text-base shadow-lg border border-emerald-400/40"
+                            >
+                                <i class="fas fa-download mr-2"></i>匯出備份
+                            </button>
+                            <label class="px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-black text-sm md:text-base shadow border border-slate-600 cursor-pointer">
+                                <i class="fas fa-upload mr-2"></i>匯入備份
+                                <input type="file" accept=".json,application/json" class="hidden" onchange="importTradingData(this.files[0]); this.value='';">
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -403,15 +461,18 @@
                         <div class="bg-slate-800/50 px-14 py-12 border-b border-slate-800 text-center"><h2 class="text-4xl font-black text-white">${isEdit ? '編輯' : '新增'} ${isGold ? '黃金' : '台股'} 紀錄</h2></div>
                         <form id="trading-form" class="p-14 space-y-14">
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-                                <div><label class="form-label">進場日期</label><input type="date" name="date" value="${record.date}" class="form-input" required></div>
+                                <div>
+                                    <label class="form-label">進場日期</label>
+                                    <input type="date" name="date" value="${record.date}" class="form-input" required>
+                                </div>
                                 <div class="md:col-span-1">
                                     <label class="form-label">交易標的</label>
                                     ${
                                         !isGold
                                         ? `
                                         <div class="flex flex-row space-x-2 mb-4">
-                                            <div id="tab-auto" class="input-tab active" onclick="switchInputMethod('auto')">代號查找</div>
-                                            <div id="tab-manual" class="input-tab inactive" onclick="switchInputMethod('manual')">手動輸入</div>
+                                            <button type="button" id="tab-auto" class="input-tab active" onclick="switchInputMethod('auto')">自動輸入</button>
+                                            <button type="button" id="tab-manual" class="input-tab inactive" onclick="switchInputMethod('manual')">手動輸入</button>
                                         </div>
                                         <div id="auto-lookup-box">
                                             <input type="text" placeholder="例如：2330" class="form-input" oninput="lookupStockId(this.value)">
@@ -442,33 +503,63 @@
                                     <div class="space-y-4" id="rank-section"></div>
                                 </div>
                                 <h3 class="text-xl font-black text-blue-500 mb-8 mt-12 border-b border-slate-800 pb-3 uppercase tracking-widest">加分項目</h3>
-                                <div class="grid md:grid-cols-2 gap-6">
-                                    <label class="checkbox-card">
-                                        <input type="checkbox" name="fundamental" ${record.fundamental ? 'checked' : ''} onchange="refreshCalculations()">
-                                        <div class="flex flex-col">
-                                            <span class="font-black text-slate-200 text-lg">基本面加分</span>
-                                            <span class="text-xs text-slate-500 font-bold">營收與趨勢良好 +20 Pts</span>
-                                        </div>
-                                    </label>
-                                    <label class="checkbox-card">
-                                        <input type="checkbox" name="news" ${record.news ? 'checked' : ''} onchange="refreshCalculations()">
-                                        <div class="flex flex-col">
-                                            <span class="font-black text-slate-200 text-lg">消息面加分</span>
-                                            <span class="text-xs text-slate-500 font-bold">重大新聞或籌碼支撐 +20 Pts</span>
-                                        </div>
-                                    </label>
+                                <div class="bg-slate-900 rounded-[2.5rem] border border-slate-800 px-10 py-8 mb-4">
+                                    <div class="flex flex-col md:flex-row gap-8 items-stretch">
+                                        <!-- 基本面加分：左半大卡片 -->
+                                        <label class="flex-1 flex items-center gap-4 p-5 rounded-2xl border border-slate-700 bg-slate-950/40 cursor-pointer hover:bg-slate-900 transition-all">
+                                            <input
+                                                type="checkbox"
+                                                name="fundamental"
+                                                ${record.fundamental ? 'checked' : ''}
+                                                onchange="refreshCalculations()"
+                                                class="w-6 h-6 accent-blue-500 rounded-md border border-slate-500"
+                                            >
+                                            <div class="flex flex-col">
+                                                <span class="font-black text-slate-100 text-xl">基本面加分</span>
+                                                <span class="text-sm text-slate-400 font-bold mt-1">營收與趨勢良好 +20 Pts</span>
+                                            </div>
+                                        </label>
+                                        <!-- 消息面加分：右半大卡片 -->
+                                        <label class="flex-1 flex items-center gap-4 p-5 rounded-2xl border border-slate-700 bg-slate-950/40 cursor-pointer hover:bg-slate-900 transition-all">
+                                            <input
+                                                type="checkbox"
+                                                name="news"
+                                                ${record.news ? 'checked' : ''}
+                                                onchange="refreshCalculations()"
+                                                class="w-6 h-6 accent-blue-500 rounded-md border border-slate-500"
+                                            >
+                                            <div class="flex flex-col">
+                                                <span class="font-black text-slate-100 text-xl">消息面加分</span>
+                                                <span class="text-sm text-slate-400 font-bold mt-1">重大新聞或籌碼支撐 +20 Pts</span>
+                                            </div>
+                                        </label>
+                                    </div>
                                 </div>
                             </section>
                             <section>
                                 <h3 class="text-xl font-black text-blue-500 mb-8 border-b border-slate-800 pb-3 uppercase tracking-widest">數據分析</h3>
-                                <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
-                                    <div><label class="form-label">單位</label><input type="text" name="units" value="${record.units}" class="form-input"></div>
-                                    <div><label class="form-label">進場價格</label><input type="text" id="entry-price" name="entryPrice" value="${record.entryPrice}" class="form-input" oninput="refreshCalculations()" required></div>
-                                    <div><label class="form-label">停利 TP</label><input type="text" id="tp-price" name="tp" value="${record.tp}" class="form-input" oninput="refreshCalculations()"></div>
-                                    <div><label class="form-label">停損 SL</label><input type="text" id="sl-price" name="sl" value="${record.sl}" class="form-input" oninput="refreshCalculations()"></div>
+                                <div class="flex flex-col md:flex-row md:items-end gap-8">
+                                    <div class="flex-1 min-w-[180px]">
+                                        <label class="form-label">單位<br></label>
+                                        <input type="text" name="units" value="${record.units}" class="form-input">
+                                    </div>
+                                    <div class="flex-1 min-w-[180px]">
+                                        <label class="form-label">進場價格</label>
+                                        <input type="text" id="entry-price" name="entryPrice" value="${record.entryPrice}" class="form-input" oninput="refreshCalculations()" required>
+                                    </div>
+                                    <div class="flex-1 min-w-[180px]">
+                                        <label class="form-label">停利 TP</label>
+                                        <input type="text" id="tp-price" name="tp" value="${record.tp}" class="form-input" oninput="refreshCalculations()">
+                                    </div>
+                                    <div class="flex-1 min-w-[180px]">
+                                        <label class="form-label">停損 SL</label>
+                                        <input type="text" id="sl-price" name="sl" value="${record.sl}" class="form-input" oninput="refreshCalculations()">
+                                    </div>
                                 </div>
+                                    
+
                                 <div class="mt-10">
-                                    <label class="form-label text-blue-400 font-black">出場價格 (有數值即自動判定結單)</label>
+                                    <label class="form-label text-blue-400 font-black">出場價格 (有數值即自動判定結單)&ensp;&ensp;&ensp;&ensp;</label>
                                     <input type="text" id="exit-price" name="exitPrice" value="${record.exitPrice}" class="form-input border-blue-500/50" placeholder="填入出場價格" oninput="refreshCalculations()">
                                 </div>
                                 <div class="mt-10 bg-slate-800 text-white p-10 rounded-[2.5rem] flex flex-col md:flex-row justify-between items-center shadow-inner border border-slate-700">
@@ -513,14 +604,26 @@
             const conds = (tradeType === '多')
                 ? ['Vegas通道往上', 'RSI黃金交叉']
                 : ['Vegas通道往下', 'RSI死亡交叉'];
-
-            condEl.innerHTML = conds.map(c => `
-                <label class="checkbox-card">
-                    <input type="checkbox" name="conditions" value="${c}"
-                           ${savedConds.includes(c) ? 'checked' : ''} onchange="refreshCalculations()">
-                    <span class="text-base font-black text-slate-200">${c}</span>
-                </label>
-            `).join('');
+                    
+            condEl.innerHTML = `
+                <div class="bg-slate-900 rounded-[2.5rem] border border-slate-700 p-8 h-full flex flex-col justify-center">
+                    <div class="flex flex-col gap-6 text-lg text-slate-200 font-black">
+                        ${conds.map(c => `
+                            <label class="flex items-center gap-4 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    name="conditions"
+                                    value="${c}"
+                                    ${savedConds.includes(c) ? 'checked' : ''}
+                                    onchange="refreshCalculations()"
+                                    class="w-6 h-6 accent-blue-500 rounded-md border border-slate-500"
+                                >
+                                <span>${c}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
 
             const ranks = (tradeType === '多')
                 ? [
@@ -540,7 +643,7 @@
                     r.n === '銀單' ? 'rank-silver' :
                     'rank-bronze';
 
-                const selected = savedRank === r.n ? 'ring-4 ring-blue-500 ring-offset-2' : '';
+            const selected = savedRank === r.n ? 'ring-4 ring-blue-500 ring-offset-2' : '';
 
                 return `
                     <label class="flex items-center gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all ${baseClass} ${selected}">
@@ -667,7 +770,7 @@
                     </div>
                     <div class="bg-slate-900 px-10 py-12 rounded-[3rem] border border-slate-800 shadow-xl mt-10 w-full">
                         <h3 class="text-2xl font-black text-blue-500 mb-6 flex items-center gap-3"><i class="fas fa-brain"></i> 總體交易心得與觀察</h3>
-                        <textarea id="general-insights-input" class="form-input text-lg" rows="22"  style="width: 100% !important; min-width: 100% !important; min-height: 420px;" placeholder="記錄您的市場觀察、心法修煉、或是對近期策略執行率的檢討...">${tradingData.generalInsights || ''}</textarea>
+                        <textarea id="general-insights-input" class="form-input text-lg" rows="22" style="width: 100% !important; min-width: 100% !important; min-height: 420px;" placeholder="記錄您的市場觀察、心法修煉、或是對近期策略執行率的檢討...">${tradingData.generalInsights || ''}</textarea>
                         <div class="mt-8">
                             <button onclick="saveGeneralInsights()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-6 rounded-2xl shadow-2xl transition-all active:scale-95 text-xl tracking-widest">
                                 <i class="fas fa-save mr-2"></i> 儲存總體心得
@@ -734,5 +837,3 @@
     </script>
 </body>
 </html>
-
-
