@@ -79,6 +79,20 @@
         .permission-notice {
             @apply mt-6 p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-500 max-w-sm text-left;
         }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="min-h-screen pb-12">
@@ -89,7 +103,7 @@
             <i class="fas fa-chart-line text-6xl"></i>
         </div>
         <h1 class="text-4xl font-black text-white mb-4 tracking-tighter">個人交易追蹤系統</h1>
-        <p class="text-slate-400 mb-10 max-w-sm px-6">使用信箱登入，交易資料將安全加密儲存。</p>
+        <p class="text-slate-400 mb-10 max-w-sm px-6">使用信箱登入，交易資料儲存於 GitHub。</p>
         
         <div class="flex flex-col gap-6 max-w-md w-full px-6">
             <div>
@@ -97,8 +111,14 @@
                 <input type="email" id="login-email" class="form-input" placeholder="例如：你的信箱@gmail.com" required>
             </div>
             
-            <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black text-xl transition-all shadow-xl active:scale-95">
-                <i class="fas fa-sign-in-alt mr-2"></i> 登入
+            <div>
+                <label class="form-label">GitHub Personal Access Token</label>
+                <input type="password" id="login-token" class="form-input" placeholder="ghp_xxxxx">
+                <p class="text-xs text-slate-400 mt-2">用於從 GitHub 讀寫交易資料。<a href="https://github.com/settings/tokens" target="_blank" class="text-blue-400 hover:underline">如何取得？</a></p>
+            </div>
+            
+            <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black text-xl transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2">
+                <i class="fas fa-sign-in-alt"></i> <span id="login-btn-text">登入</span>
             </button>
 
             <button onclick="handleLogout()" class="text-sm font-bold text-slate-500 hover:text-blue-400 underline transition-all">
@@ -109,10 +129,10 @@
         <div class="permission-notice">
             <p class="font-bold text-slate-400 mb-2 underline"><i class="fas fa-info-circle mr-1"></i> 說明：</p>
             <ul class="space-y-1">
-                <li>• 輸入你的信箱作為帳號識別</li>
-                <li>• 信箱會被加密儲存</li>
-                <li>• 資料只儲存在你的瀏覽器</li>
-                <li>• 可選：同步到 GitHub 備份</li>
+                <li>• 輸入信箱作為帳號識別</li>
+                <li>• Token 用於存取 GitHub</li>
+                <li>• 所有資料存在 GitHub repo</li>
+                <li>• 信箱會被加密，隱私有保障</li>
             </ul>
         </div>
     </div>
@@ -146,22 +166,16 @@
         /**
          * GitHub 相關設定
          */
-        const GITHUB_OWNER = 'cheng108025';  // 改成你的 GitHub 帳號
-        const GITHUB_REPO = 'vp-trading-tracker';  // 改成你的 repo 名
+        const GITHUB_OWNER = 'cheng108025';  // ✏️ 改成你的 GitHub 帳號
+        const GITHUB_REPO = 'vp-trading-tracker';  // ✏️ 改成你的 repo 名
 
         /**
-         * 加密密鑰（可選，為了增加安全性）
-         * 生產環境應使用更複雜的密鑰
+         * 全域變數
          */
-        const ENCRYPTION_SECRET = 'vp_trading_tracker_secret_key_2024';
-
-        /**
-         * 資料管理
-         */
-        let currentUserEmail = localStorage.getItem('current_user_email') || null;
-        let currentUserId = currentUserEmail ? hashEmail(currentUserEmail) : null;
+        let currentUserEmail = null;
+        let currentUserId = null;
         let tradingData = null;
-        let githubToken = localStorage.getItem('github_token') || null;
+        let githubToken = null;
 
         /**
          * 郵箱加密函式
@@ -173,23 +187,139 @@
         /**
          * 登入邏輯
          */
-        function handleLogin() {
+        async function handleLogin() {
             const email = document.getElementById('login-email').value;
+            const token = document.getElementById('login-token').value;
             
             if (!email || !email.includes('@')) {
                 alert('❌ 請輸入有效的信箱');
                 return;
             }
 
-            currentUserEmail = email;
-            currentUserId = hashEmail(email);
-            
-            localStorage.setItem('current_user_email', currentUserEmail);
-            loadUserData();
-            
-            document.getElementById('login-overlay').classList.add('hidden');
-            document.getElementById('main-nav').classList.remove('hidden');
-            navigateTo('home');
+            if (!token || !token.startsWith('ghp_')) {
+                alert('❌ 請輸入有效的 GitHub Token（以 ghp_ 開頭）');
+                return;
+            }
+
+            // 更新 UI 為載入中
+            const btnText = document.getElementById('login-btn-text');
+            const originalText = btnText.innerText;
+            btnText.innerHTML = '<span class="loading-spinner"></span> 登入中...';
+            document.querySelector('button').disabled = true;
+
+            try {
+                currentUserEmail = email;
+                currentUserId = hashEmail(email);
+                githubToken = token;
+
+                // 測試 GitHub Token 是否有效
+                const testRes = await fetch('https://api.github.com/user', {
+                    headers: { 'Authorization': `token ${githubToken}` }
+                });
+
+                if (!testRes.ok) {
+                    throw new Error('GitHub Token 無效或過期');
+                }
+
+                // 儲存信息到 localStorage
+                localStorage.setItem('current_user_email', currentUserEmail);
+                localStorage.setItem('github_token', githubToken);
+
+                // 載入使用者資料
+                await loadUserDataFromGitHub();
+
+                console.log('✅ 登入成功');
+                
+                // 隱藏登入介面，顯示主應用
+                document.getElementById('login-overlay').classList.add('hidden');
+                document.getElementById('main-nav').classList.remove('hidden');
+                
+                // 導航到首頁
+                navigateTo('home');
+
+            } catch (err) {
+                alert('❌ 登入失敗：' + err.message);
+                btnText.innerText = originalText;
+                document.querySelector('button').disabled = false;
+            }
+        }
+
+        /**
+         * 從 GitHub 載入使用者資料
+         */
+        async function loadUserDataFromGitHub() {
+            try {
+                const fileName = `trading_data_${currentUserId}.json`;
+                const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${fileName}`;
+
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `token ${githubToken}` }
+                });
+
+                if (res.ok) {
+                    const fileData = await res.json();
+                    const content = atob(fileData.content);
+                    tradingData = JSON.parse(content);
+                    console.log('✅ 從 GitHub 載入資料成功');
+                } else {
+                    // 檔案不存在，建立新的
+                    tradingData = { stock: [], gold: [] };
+                    console.log('📝 首次使用，建立新檔案');
+                    await saveUserDataToGitHub();
+                }
+            } catch (err) {
+                console.error('❌ 載入 GitHub 資料失敗', err);
+                tradingData = { stock: [], gold: [] };
+            }
+        }
+
+        /**
+         * 儲存使用者資料到 GitHub
+         */
+        async function saveUserDataToGitHub() {
+            if (!githubToken || !currentUserId) return;
+
+            try {
+                const fileName = `trading_data_${currentUserId}.json`;
+                const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${fileName}`;
+
+                // 先取得現有檔案的 SHA
+                const getRes = await fetch(url, {
+                    headers: { 'Authorization': `token ${githubToken}` }
+                });
+
+                let sha = null;
+                if (getRes.ok) {
+                    const fileData = await getRes.json();
+                    sha = fileData.sha;
+                }
+
+                // 上傳或更新檔案
+                const content = btoa(JSON.stringify(tradingData, null, 2));
+                const updateRes = await fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${githubToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: `Update trading data - ${new Date().toLocaleString('zh-TW')}`,
+                        content: content,
+                        sha: sha
+                    })
+                });
+
+                if (updateRes.ok) {
+                    console.log('✅ 資料已同步到 GitHub');
+                    return true;
+                } else {
+                    console.error('❌ 同步失敗:', updateRes.statusText);
+                    return false;
+                }
+            } catch (err) {
+                console.error('❌ GitHub 同步錯誤', err);
+                return false;
+            }
         }
 
         /**
@@ -198,44 +328,44 @@
         function handleLogout() {
             if (confirm('確定要登出嗎？')) {
                 localStorage.removeItem('current_user_email');
-                localStorage.removeItem('current_user_id');
+                localStorage.removeItem('github_token');
                 currentUserEmail = null;
                 currentUserId = null;
+                githubToken = null;
                 tradingData = null;
                 location.reload();
             }
         }
 
         /**
-         * 載入使用者資料
+         * 初始化應用
          */
-        function loadUserData() {
-            const key = `vp_trading_data_${currentUserId}`;
-            tradingData = JSON.parse(localStorage.getItem(key)) || { stock: [], gold: [] };
-            console.log(`✅ 已載入使用者 ${currentUserEmail} 的資料`);
-        }
+        async function initApp() {
+            const savedEmail = localStorage.getItem('current_user_email');
+            const savedToken = localStorage.getItem('github_token');
 
-        /**
-         * 儲存使用者資料
-         */
-        function saveData() {
-            const key = `vp_trading_data_${currentUserId}`;
-            localStorage.setItem(key, JSON.stringify(tradingData));
-        }
+            if (savedEmail && savedToken) {
+                currentUserEmail = savedEmail;
+                currentUserId = hashEmail(savedEmail);
+                githubToken = savedToken;
 
-        /**
-         * 頁面初始化
-         */
-        window.addEventListener('DOMContentLoaded', () => {
-            if (currentUserEmail) {
-                loadUserData();
-                document.getElementById('login-overlay').classList.add('hidden');
-                document.getElementById('main-nav').classList.remove('hidden');
-                navigateTo('home');
-            } else {
-                document.getElementById('login-overlay').classList.remove('hidden');
+                try {
+                    await loadUserDataFromGitHub();
+                    document.getElementById('login-overlay').classList.add('hidden');
+                    document.getElementById('main-nav').classList.remove('hidden');
+                    navigateTo('home');
+                } catch (err) {
+                    console.error('❌ 初始化失敗', err);
+                    localStorage.clear();
+                    location.reload();
+                }
             }
-        });
+        }
+
+        /**
+         * 頁面載入時初始化
+         */
+        document.addEventListener('DOMContentLoaded', initApp);
 
         /**
          * 頁面渲染
@@ -496,7 +626,7 @@
 
                             <div class="pt-10">
                                 <button type="button" onclick="handleSave('${marketType}', '${record.id}')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-8 rounded-[2rem] shadow-2xl transition-all active:scale-[0.98] text-2xl uppercase border border-blue-400/30 tracking-widest">
-                                    儲存交易紀錄
+                                    儲存並同步到 GitHub
                                 </button>
                             </div>
                         </form>
@@ -550,7 +680,7 @@
             document.getElementById('score-preview').innerText = score + " Pts";
         };
 
-        window.handleSave = (market, id) => {
+        window.handleSave = async (market, id) => {
             const form = document.getElementById('trading-form');
             const formData = new FormData(form);
             const record = {
@@ -572,15 +702,20 @@
             if (index > -1) tradingData[market][index] = record;
             else tradingData[market].unshift(record);
 
-            saveData();
-            alert('✅ 交易紀錄已儲存');
+            // 同步到 GitHub
+            const success = await saveUserDataToGitHub();
+            if (success) {
+                alert('✅ 交易紀錄已儲存並同步到 GitHub');
+            } else {
+                alert('⚠️ 交易紀錄已儲存，但 GitHub 同步失敗');
+            }
             navigateTo('details', market);
         };
 
-        window.deleteTrade = (market, id) => {
+        window.deleteTrade = async (market, id) => {
             if (confirm('確定永久刪除？')) {
                 tradingData[market] = tradingData[market].filter(r => r.id !== id);
-                saveData();
+                await saveUserDataToGitHub();
                 alert('✅ 已刪除');
                 navigateTo('details', market);
             }
@@ -617,45 +752,17 @@
                             <hr class="border-slate-700">
 
                             <div>
-                                <h3 class="text-xl font-black text-blue-500 mb-4">GitHub 備份</h3>
-                                <label class="form-label">GitHub Personal Access Token</label>
-                                <input type="password" id="github-token-input" value="${githubToken || ''}" class="form-input" placeholder="ghp_xxxxx">
-                                <p class="text-xs text-slate-400 mt-2">用於將交易紀錄備份到 GitHub。<a href="https://github.com/settings/tokens" target="_blank" class="text-blue-400 hover:underline">如何取得？</a></p>
-                                
-                                <div class="flex gap-4 mt-6">
-                                    <button onclick="saveGithubToken()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-[2rem] transition-all">
-                                        保存 Token
-                                    </button>
-                                    <button onclick="clearGithubToken()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-[2rem] transition-all">
-                                        清除 Token
-                                    </button>
-                                </div>
+                                <h3 class="text-xl font-black text-blue-500 mb-4">同步狀態</h3>
+                                <p class="text-slate-400 mb-4">✅ 所有資料自動同步至 GitHub</p>
+                                <button onclick="manualSyncGitHub()" class="w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 rounded-[2rem] transition-all">
+                                    <i class="fas fa-cloud-upload-alt mr-2"></i> 手動同步
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
             `;
         }
-
-        window.saveGithubToken = () => {
-            const token = document.getElementById('github-token-input').value;
-            if (token.trim()) {
-                localStorage.setItem('github_token', token);
-                githubToken = token;
-                alert('✅ GitHub Token 已保存');
-            } else {
-                alert('❌ Token 不能為空');
-            }
-        };
-
-        window.clearGithubToken = () => {
-            if (confirm('確定清除 GitHub Token？')) {
-                localStorage.removeItem('github_token');
-                githubToken = null;
-                alert('✅ Token 已清除');
-                navigateTo('settings');
-            }
-        };
 
         window.exportDataAsJSON = () => {
             const dataStr = JSON.stringify(tradingData, null, 2);
@@ -665,6 +772,15 @@
             link.href = url;
             link.download = `trading_data_${currentUserEmail.split('@')[0]}_${new Date().toISOString().split('T')[0]}.json`;
             link.click();
+        };
+
+        window.manualSyncGitHub = async () => {
+            const result = await saveUserDataToGitHub();
+            if (result) {
+                alert('✅ 已同步到 GitHub');
+            } else {
+                alert('❌ 同步失敗');
+            }
         };
 
         function renderStrategy(container) {
