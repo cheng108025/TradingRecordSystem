@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>個人交易追蹤系統 - 資料完整保存版</title>
+    <title>個人交易追蹤系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -137,48 +137,6 @@
         
         const initialData = {
             stock: [
-                { id: 's1', date: '2025-01-13', item: '皇家可口 7791', type: '多', rank: '', entryPrice: '89.5', units: '1', tp: '', sl: '', exitPrice: '', conditions: [], fundamental: true, news: false, reflection: '長期看好當存股', timestamp: 1736755200000 },
-                { id: 's2', date: '2025-01-13', item: '中探針 6217', type: '多', rank: '金單', entryPrice: '53.0', units: '1', tp: '58.0', sl: '50', exitPrice: '', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: true, reflection: 'Vegas通道+RSI黃金交叉+VP的VAL', timestamp: 1736755200001 },
-                { id: 's3', date: '2025-01-13', item: '精材 3374', type: '多', rank: '金單', entryPrice: '146.5', units: '1', tp: '154', sl: '143', exitPrice: '', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: true, reflection: 'VP的POC(完美)', timestamp: 1736755200002 },
-                { id: 's4', date: '2024-12-05', item: '中探針 6217', type: '多', rank: '銀單', entryPrice: '51.3', units: '1', tp: '56.2', sl: '48', exitPrice: '', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: false, reflection: 'VAL與POC之間', timestamp: 1733356800000 },
-                { id: 's5', date: '2025-12-31', item: '雄獅 2731', type: '多', rank: '銅單', entryPrice: '164.5', units: '1', tp: '172', sl: '147', exitPrice: '', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: false, reflection: '', timestamp: 1767139200000 },
-                { id: 's6', date: '2025-01-08', item: '光寶科 2301', type: '多', rank: '銀單', entryPrice: '161', units: '1', tp: '177', sl: '147', exitPrice: '', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: false, reflection: 'VAL到POC之間', timestamp: 1736294400000 },
-                { id: 's7', date: '2025-01-10', item: '矽統 2363', type: '多', rank: '金單', entryPrice: '56.2', units: '1', tp: '59', sl: '56', exitPrice: '56.9', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: false, reflection: '當沖沖掉，沒跌破VAL', timestamp: 1736467200000 },
-                { id: 's8', date: '2025-01-10', item: '矽統 2363', type: '多', rank: '金單', entryPrice: '56.2', units: '1', tp: '61.2', sl: '55.1', exitPrice: '58', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: false, reflection: '換成中探針', timestamp: 1736467200001 },
-                { id: 's9', date: '2025-01-10', item: '保勝光學 6517', type: '空', rank: '銀單', entryPrice: '66.6', units: '1', tp: '65.3', sl: '67.8', exitPrice: '65.7', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '差點到目標就噴上去', timestamp: 1736467200002 },
-                { id: 's10', date: '2025-01-10', item: '光寶科 2301', type: '多', rank: '銅單', entryPrice: '168', units: '1', tp: '174', sl: '164', exitPrice: '170.5', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: false, news: false, reflection: '跌破171大量套保出掉', timestamp: 1736467200003 },
-                { id: 's11', date: '2025-01-10', item: '士電 1503', type: '空', rank: '銅單', entryPrice: '176.5', units: '1', tp: '178', sl: '173.5', exitPrice: '175.5', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '當沖沖掉', timestamp: 1736467200004 },
-                { id: 's12', date: '2025-01-11', item: '凌華 6266', type: '空', rank: '銅單', entryPrice: '61.2', units: '1', tp: '60.5', sl: '61.5', exitPrice: '60.7', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '', timestamp: 1736553600000 },
-                { id: 's13', date: '2025-01-11', item: '文曄 3036', type: '多', rank: '銅單', entryPrice: '139.5', units: '1', tp: '143', sl: '132', exitPrice: '140.5', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: false, news: false, reflection: '', timestamp: 1736553600001 },
-                { id: 's14', date: '2025-01-11', item: '皇昌 2543', type: '空', rank: '銅單', entryPrice: '70.1', units: '1', tp: '69.0', sl: '70.8', exitPrice: '69.4', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '預估今天不會到VAL，提早平倉', timestamp: 1736553600002 },
-                { id: 's15', date: '2025-01-12', item: '茂綸 6227', type: '空', rank: '銅單', entryPrice: '90', units: '1', tp: '87.8', sl: '91', exitPrice: '89.4', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '台股當沖空單摸索中', timestamp: 1736640000000 },
-                { id: 's16', date: '2025-01-12', item: '欣興 3037', type: '多', rank: '銅單', entryPrice: '163.5', units: '1', tp: '173', sl: '159', exitPrice: '173', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: false, reflection: '出國賣掉的', timestamp: 1736640000001 },
-                { id: 's17', date: '2025-01-12', item: '盟立 2464', type: '空', rank: '銀單', entryPrice: '66', units: '1', tp: '64.7', sl: '66.9', exitPrice: '66.3', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '進場點不好，學習中', timestamp: 1736640000002 },
-                { id: 's18', date: '2025-01-12', item: '緯創 3231', type: '多', rank: '銅單', entryPrice: '144.5', units: '1', tp: '152', sl: '142', exitPrice: '142', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: false, reflection: '要看波段，不能看短線', timestamp: 1736640000003 },
-                { id: 's19', date: '2025-01-12', item: '矽格 6257', type: '多', rank: '銅單', entryPrice: '98.5', units: '1', tp: '100', sl: '97', exitPrice: '96.9', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: false, reflection: '', timestamp: 1736640000004 },
-                { id: 's20', date: '2025-01-13', item: '王品 2727', type: '多', rank: '銅單', entryPrice: '223', units: '1', tp: '219', sl: '227', exitPrice: '222.5', conditions: [], fundamental: false, news: false, reflection: '研究空單打法', timestamp: 1736726400000 },
-                { id: 's21', date: '2025-01-13', item: '神達 3706', type: '空', rank: '銅單', entryPrice: '93.7', units: '1', tp: '99', sl: '91.5', exitPrice: '92.1', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '白癡台股日內玩不了', timestamp: 1736726400001 },
-                { id: 's22', date: '2025-01-13', item: '凌華 6166', type: '空', rank: '銅單', entryPrice: '60', units: '1', tp: '58', sl: '61', exitPrice: '60.3', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '都要等隔天', timestamp: 1736726400002 },
-                { id: 's23', date: '2025-01-13', item: '鴻準 2354', type: '多', rank: '銅單', entryPrice: '70.7', units: '1', tp: '74', sl: '65', exitPrice: '63', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: false, news: false, reflection: '還是玩黃金實在', timestamp: 1736726400003 },
-                { id: 's24', date: '2025-12-26', item: '鴻準 2354', type: '空', rank: '銅單', entryPrice: '67.1', units: '1', tp: '60', sl: '70', exitPrice: '69', conditions: ['Vegas通道往下', 'RSI死亡交叉'], fundamental: false, news: false, reflection: '空的不好，均線交錯', timestamp: 1766707200000 },
-            ],
-            gold: [
-                { id: 'g1', date: '2025-01-01', item: '黃金 XAUUSD', type: '空', rank: '銀單', entryPrice: '4025', units: '0.01', tp: '3919', sl: '4035', exitPrice: '4020', conditions: ['Vegas通道往下', 'RSI死亡交叉'], news: true, reflection: '開會議先跑，資訊要檢查', timestamp: 1735689600000 },
-                { id: 'g2', date: '2025-01-02', item: '黃金 XAUUSD', type: '空', rank: '銀單', entryPrice: '4014', units: '0.01', tp: '3970', sl: '4030', exitPrice: '3990', conditions: ['Vegas通道往下', 'RSI死亡交叉'], reflection: '量會移動，做黃金要更新VP', timestamp: 1735776000000 },
-                { id: 'g3', date: '2025-11-22', item: '黃金 XAUUSD', type: '空', rank: '銀單', entryPrice: '4069', units: '0.01', tp: '4030', sl: '4106', exitPrice: '4065', conditions: ['Vegas通道往下', 'RSI死亡交叉'], reflection: '15分空頭回調', timestamp: 1763769600000 },
-                { id: 'g4', date: '2025-12-04', item: '黃金 XAUUSD', type: '多', rank: '銀單', entryPrice: '4191', units: '0.01', tp: '4212', sl: '4160', exitPrice: '4212', conditions: ['Vegas通道往上', 'RSI黃金交叉'], reflection: '碰到POC就跌，釐清原因', timestamp: 1764720000000 },
-                { id: 'g5', date: '2025-12-05', item: '黃金 XAUUSD', type: '多', rank: '銅單', entryPrice: '4202', units: '0.01', tp: '4250', sl: '4190', exitPrice: '4250', conditions: ['Vegas通道往上', 'RSI黃金交叉'], reflection: '剛碰到VAH就往下砸', timestamp: 1764806400000 },
-                { id: 'g6', date: '2025-12-09', item: '黃金 XAUUSD', type: '多', rank: '金單', entryPrice: '4183', units: '0.02', tp: '4250', sl: '4170', exitPrice: '4250', conditions: ['Vegas通道往上', 'RSI黃金交叉'], fundamental: true, news: true, reflection: '消息面或基本面調整預期', timestamp: 1765152000000 },
-                { id: 'g7', date: '2025-12-11', item: '黃金 XAUUSD', type: '多', rank: '銅單', entryPrice: '4211', units: '0.02', tp: '4250', sl: '4170', exitPrice: '4250', conditions: ['Vegas通道往上', 'RSI黃金交叉'], news: true, reflection: '符合鮑爾降息消息面加倉', timestamp: 1765324800000 },
-                { id: 'g8', date: '2025-12-12', item: '黃金 XAUUSD', type: '多', rank: '金單', entryPrice: '4239', units: '0.01', tp: '4193', sl: '4250', exitPrice: '4250', conditions: [], reflection: 'VAH高點M頭止損', timestamp: 1765411200000 },
-                { id: 'g9', date: '2025-12-12', item: '黃金 XAUUSD', type: '空', rank: '銅單', entryPrice: '3994', units: '0.01', tp: '3919', sl: '4020', exitPrice: '4020', conditions: [], reflection: 'RSI過熱插針止損', timestamp: 1765411200001 },
-                { id: 'g10', date: '2025-12-13', item: '黃金 XAUUSD', type: '空', rank: '銀單', entryPrice: '3994', units: '0.01', tp: '3045', sl: '4010', exitPrice: '4010', conditions: ['Vegas通道往下', 'RSI死亡交叉'], reflection: '等待均線下降訊號', timestamp: 1765497600000 },
-                { id: 'g11', date: '2025-12-08', item: '黃金 XAUUSD', type: '多', rank: '銅單', entryPrice: '4209', units: '2', tp: '4250', sl: '4190', exitPrice: '4190', conditions: ['Vegas通道往上', 'RSI黃金交叉'], reflection: 'POC與VAL之間勝率高', timestamp: 1765065600000 },
-                { id: 'g12', date: '2025-12-08', item: '黃金 XAUUSD', type: '多', rank: '銅單', entryPrice: '4210', units: '2', tp: '4250', sl: '4190', exitPrice: '4190', conditions: ['Vegas通道往上', 'RSI黃金交叉'], reflection: 'POC進單一單位就好', timestamp: 1765065600001 },
-                { id: 'g13', date: '2025-12-10', item: '黃金 XAUUSD', type: '多', rank: '金單', entryPrice: '4197', units: '0.02', tp: '4212', sl: '4185', exitPrice: '4185', conditions: ['Vegas通道往上', 'RSI黃金交叉'], reflection: '降息不降息波動大，停損要後放', timestamp: 1765238400000 },
-                { id: 'g14', date: '2025-12-31', item: '黃金 XAUUSD', type: '多', rank: '銀單', entryPrice: '4352', units: '0.02', tp: '4395', sl: '4320', exitPrice: '4320', conditions: ['Vegas通道往上', 'RSI黃金交叉'], reflection: '不能貪心，遵守到POC才做單', timestamp: 1767139200000 },
-            ],
-            generalInsights: ''
         };
 
         // 本地儲存初始化
@@ -770,3 +728,4 @@
     </script>
 </body>
 </html>
+
