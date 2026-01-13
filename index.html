@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>個人交易追蹤系統 - GitHub 版本</title>
+    <title>個人交易追蹤系統 - 本地紀錄版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- 引入加密庫 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
         
@@ -17,8 +14,8 @@
         body { 
             font-family: 'Noto Sans TC', sans-serif; 
             line-height: 1.6; 
-            background-color: #020617;
-            color: #f1f5f9;
+            background-color: #020617; /* Slate-950 */
+            color: #f1f5f9; /* Slate-100 */
         }
 
         .card-stock { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); }
@@ -34,6 +31,7 @@
         .page-transition { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* 輸入框：白底黑字設計 */
         .form-input { 
             @apply w-full px-5 py-3.5 rounded-2xl border-2 border-slate-300 bg-white transition-all text-lg font-medium;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
@@ -43,7 +41,10 @@
         .form-input:focus { @apply border-blue-500 ring-4 ring-blue-500/20 outline-none; }
         .form-label { @apply block text-base font-black text-slate-200 mb-2.5; }
         
-        .checkbox-card { @apply flex items-center gap-4 p-4 rounded-2xl border-2 border-slate-800 bg-slate-900/60 cursor-pointer hover:bg-slate-800 transition-all; }
+        /* 勾選與單選卡片 */
+        .checkbox-card { 
+            @apply flex items-center gap-4 p-4 rounded-2xl border-2 border-slate-800 bg-slate-900/60 cursor-pointer hover:bg-slate-800 transition-all; 
+        }
         .checkbox-card input { @apply w-6 h-6 text-blue-600 rounded-lg focus:ring-blue-500 bg-slate-950 border-slate-600; }
 
         .rank-gold { @apply bg-amber-900/50 text-amber-400 border-amber-800; }
@@ -56,6 +57,8 @@
         .input-tab.active { @apply bg-white border-white text-black shadow-lg; }
         .input-tab.inactive { @apply bg-slate-900 border-slate-800 text-slate-500 hover:bg-slate-800; }
 
+        .grid-compact { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+
         select.form-input {
             appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23334155'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
@@ -63,82 +66,12 @@
             background-position: right 1rem center;
             background-size: 1.2em;
         }
-
-        #login-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 100;
-            background-color: #020617;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-
-        .permission-notice {
-            @apply mt-6 p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-500 max-w-sm text-left;
-        }
-
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
     </style>
 </head>
 <body class="min-h-screen pb-12">
 
-    <!-- 登入牆 -->
-    <div id="login-overlay">
-        <div class="bg-blue-600 p-6 rounded-[2.5rem] text-white shadow-2xl mb-8 animate-pulse">
-            <i class="fas fa-chart-line text-6xl"></i>
-        </div>
-        <h1 class="text-4xl font-black text-white mb-4 tracking-tighter">個人交易追蹤系統</h1>
-        <p class="text-slate-400 mb-10 max-w-sm px-6">使用信箱登入，交易資料儲存於 GitHub。</p>
-        
-        <div class="flex flex-col gap-6 max-w-md w-full px-6">
-            <div>
-                <label class="form-label">登入信箱</label>
-                <input type="email" id="login-email" class="form-input" placeholder="例如：你的信箱@gmail.com" required>
-            </div>
-            
-            <div>
-                <label class="form-label">GitHub Personal Access Token</label>
-                <input type="password" id="login-token" class="form-input" placeholder="ghp_xxxxx">
-                <p class="text-xs text-slate-400 mt-2">用於從 GitHub 讀寫交易資料。<a href="https://github.com/settings/tokens" target="_blank" class="text-blue-400 hover:underline">如何取得？</a></p>
-            </div>
-            
-            <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black text-xl transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2">
-                <i class="fas fa-sign-in-alt"></i> <span id="login-btn-text">登入</span>
-            </button>
-
-            <button onclick="handleLogout()" class="text-sm font-bold text-slate-500 hover:text-blue-400 underline transition-all">
-                登出或切換帳號
-            </button>
-        </div>
-
-        <div class="permission-notice">
-            <p class="font-bold text-slate-400 mb-2 underline"><i class="fas fa-info-circle mr-1"></i> 說明：</p>
-            <ul class="space-y-1">
-                <li>• 輸入信箱作為帳號識別</li>
-                <li>• Token 用於存取 GitHub</li>
-                <li>• 所有資料存在 GitHub repo</li>
-                <li>• 信箱會被加密，隱私有保障</li>
-            </ul>
-        </div>
-    </div>
-
     <!-- 導覽列 -->
-    <nav id="main-nav" class="glass-effect shadow-2xl sticky top-0 z-50 px-6 py-4 hidden">
+    <nav class="glass-effect shadow-2xl sticky top-0 z-50 px-6 py-4">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-3 cursor-pointer" onclick="navigateTo('home')">
                 <div class="bg-blue-600 p-2.5 rounded-2xl text-white shadow-xl">
@@ -148,227 +81,67 @@
             </div>
             
             <div class="flex items-center gap-4">
-                <button onclick="navigateTo('settings')" class="text-slate-400 hover:text-blue-400 text-2xl transition-all" title="設定">
-                    <i class="fas fa-cog"></i>
-                </button>
-                <button onclick="handleLogout()" class="text-slate-400 hover:text-red-400 text-2xl transition-all" title="登出">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
+                <div class="flex items-center gap-3 bg-slate-800 px-4 py-2 rounded-2xl border border-slate-700 text-slate-300">
+                    <i class="fas fa-database text-sm text-blue-400"></i>
+                    <span class="text-sm font-bold">本地儲存模式</span>
+                </div>
             </div>
         </div>
     </nav>
 
     <main id="app-container" class="max-w-7xl mx-auto p-4 md:p-10">
-        <!-- 內容區域 -->
+        <!-- 頁面內容將由 JavaScript 動態注入 -->
     </main>
 
     <script>
         /**
-         * GitHub 相關設定
+         * 1. 資料管理
          */
-        const GITHUB_OWNER = 'cheng108025';  // ✏️ 改成你的 GitHub 帳號
-        const GITHUB_REPO = 'vp-trading-tracker';  // ✏️ 改成你的 repo 名
+        const STORAGE_KEY = 'vp_trading_tracker_v5_local_final';
+        let tradingData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { stock: [], gold: [] };
 
-        /**
-         * 全域變數
-         */
-        let currentUserEmail = null;
-        let currentUserId = null;
-        let tradingData = null;
-        let githubToken = null;
-
-        /**
-         * 郵箱加密函式
-         */
-        function hashEmail(email) {
-            return CryptoJS.SHA256(email.toLowerCase().trim()).toString();
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tradingData));
         }
 
         /**
-         * 登入邏輯
+         * 2. 自動判定與計算邏輯
          */
-        async function handleLogin() {
-            const email = document.getElementById('login-email').value;
-            const token = document.getElementById('login-token').value;
-            
-            if (!email || !email.includes('@')) {
-                alert('❌ 請輸入有效的信箱');
-                return;
-            }
-
-            if (!token || !token.startsWith('ghp_')) {
-                alert('❌ 請輸入有效的 GitHub Token（以 ghp_ 開頭）');
-                return;
-            }
-
-            // 更新 UI 為載入中
-            const btnText = document.getElementById('login-btn-text');
-            const originalText = btnText.innerText;
-            btnText.innerHTML = '<span class="loading-spinner"></span> 登入中...';
-            document.querySelector('button').disabled = true;
-
-            try {
-                currentUserEmail = email;
-                currentUserId = hashEmail(email);
-                githubToken = token;
-
-                // 測試 GitHub Token 是否有效
-                const testRes = await fetch('https://api.github.com/user', {
-                    headers: { 'Authorization': `token ${githubToken}` }
-                });
-
-                if (!testRes.ok) {
-                    throw new Error('GitHub Token 無效或過期');
-                }
-
-                // 儲存信息到 localStorage
-                localStorage.setItem('current_user_email', currentUserEmail);
-                localStorage.setItem('github_token', githubToken);
-
-                // 載入使用者資料
-                await loadUserDataFromGitHub();
-
-                console.log('✅ 登入成功');
-                
-                // 隱藏登入介面，顯示主應用
-                document.getElementById('login-overlay').classList.add('hidden');
-                document.getElementById('main-nav').classList.remove('hidden');
-                
-                // 導航到首頁
-                navigateTo('home');
-
-            } catch (err) {
-                alert('❌ 登入失敗：' + err.message);
-                btnText.innerText = originalText;
-                document.querySelector('button').disabled = false;
+        function determineResult(type, entry, exit) {
+            const e = parseFloat(entry);
+            const x = parseFloat(exit);
+            if (isNaN(e) || isNaN(x)) return "待定";
+            if (type === '多') {
+                return x > e ? "獲利" : (x < e ? "虧損" : "平手");
+            } else {
+                return x < e ? "獲利" : (x > e ? "虧損" : "平手");
             }
         }
 
-        /**
-         * 從 GitHub 載入使用者資料
-         */
-        async function loadUserDataFromGitHub() {
-            try {
-                const fileName = `trading_data_${currentUserId}.json`;
-                const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${fileName}`;
+        function calculateTradeScore(record) {
+            let score = 0;
+            if (record.rank === '金單') score += 40;
+            else if (record.rank === '銀單') score += 25;
+            else if (record.rank === '銅單') score += 10;
+            (record.conditions || []).forEach(() => score += 10);
+            return Math.min(score, 100);
+        }
 
-                const res = await fetch(url, {
-                    headers: { 'Authorization': `token ${githubToken}` }
-                });
-
-                if (res.ok) {
-                    const fileData = await res.json();
-                    const content = atob(fileData.content);
-                    tradingData = JSON.parse(content);
-                    console.log('✅ 從 GitHub 載入資料成功');
-                } else {
-                    // 檔案不存在，建立新的
-                    tradingData = { stock: [], gold: [] };
-                    console.log('📝 首次使用，建立新檔案');
-                    await saveUserDataToGitHub();
-                }
-            } catch (err) {
-                console.error('❌ 載入 GitHub 資料失敗', err);
-                tradingData = { stock: [], gold: [] };
-            }
+        function calculateRR(entry, tp, sl) {
+            const e = parseFloat(entry);
+            const t = parseFloat(tp);
+            const s = parseFloat(sl);
+            if (isNaN(e) || isNaN(t) || isNaN(s) || e === s) return "0.0";
+            return (Math.abs(t - e) / Math.abs(e - s)).toFixed(1);
         }
 
         /**
-         * 儲存使用者資料到 GitHub
+         * 3. 標的資料庫
          */
-        async function saveUserDataToGitHub() {
-            if (!githubToken || !currentUserId) return;
-
-            try {
-                const fileName = `trading_data_${currentUserId}.json`;
-                const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${fileName}`;
-
-                // 先取得現有檔案的 SHA
-                const getRes = await fetch(url, {
-                    headers: { 'Authorization': `token ${githubToken}` }
-                });
-
-                let sha = null;
-                if (getRes.ok) {
-                    const fileData = await getRes.json();
-                    sha = fileData.sha;
-                }
-
-                // 上傳或更新檔案
-                const content = btoa(JSON.stringify(tradingData, null, 2));
-                const updateRes = await fetch(url, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${githubToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: `Update trading data - ${new Date().toLocaleString('zh-TW')}`,
-                        content: content,
-                        sha: sha
-                    })
-                });
-
-                if (updateRes.ok) {
-                    console.log('✅ 資料已同步到 GitHub');
-                    return true;
-                } else {
-                    console.error('❌ 同步失敗:', updateRes.statusText);
-                    return false;
-                }
-            } catch (err) {
-                console.error('❌ GitHub 同步錯誤', err);
-                return false;
-            }
-        }
+        const stockMap = { "2330": "台積電", "2317": "鴻海", "2454": "聯發科", "2303": "聯電", "2603": "長榮", "2881": "富邦金", "3231": "緯創", "2382": "廣達" };
 
         /**
-         * 登出
-         */
-        function handleLogout() {
-            if (confirm('確定要登出嗎？')) {
-                localStorage.removeItem('current_user_email');
-                localStorage.removeItem('github_token');
-                currentUserEmail = null;
-                currentUserId = null;
-                githubToken = null;
-                tradingData = null;
-                location.reload();
-            }
-        }
-
-        /**
-         * 初始化應用
-         */
-        async function initApp() {
-            const savedEmail = localStorage.getItem('current_user_email');
-            const savedToken = localStorage.getItem('github_token');
-
-            if (savedEmail && savedToken) {
-                currentUserEmail = savedEmail;
-                currentUserId = hashEmail(savedEmail);
-                githubToken = savedToken;
-
-                try {
-                    await loadUserDataFromGitHub();
-                    document.getElementById('login-overlay').classList.add('hidden');
-                    document.getElementById('main-nav').classList.remove('hidden');
-                    navigateTo('home');
-                } catch (err) {
-                    console.error('❌ 初始化失敗', err);
-                    localStorage.clear();
-                    location.reload();
-                }
-            }
-        }
-
-        /**
-         * 頁面載入時初始化
-         */
-        document.addEventListener('DOMContentLoaded', initApp);
-
-        /**
-         * 頁面渲染
+         * 4. 路由與渲染
          */
         window.navigateTo = (page, params = null) => {
             const container = document.getElementById('app-container');
@@ -380,7 +153,6 @@
                 case 'details': renderDetails(container, params); break;
                 case 'strategy': renderStrategy(container); break;
                 case 'form': renderForm(container, params.type, params.id); break;
-                case 'settings': renderSettings(container); break;
             }
         };
 
@@ -389,19 +161,19 @@
                 <div class="page-transition">
                     <div class="mb-14 mt-4 text-center md:text-left">
                         <h2 class="text-5xl font-black text-white tracking-tighter">數據儀表板</h2>
-                        <p class="text-xl text-slate-400 mt-4 font-medium italic">歡迎回來，${currentUserEmail}</p>
+                        <p class="text-xl text-slate-400 mt-4 font-medium italic">Vegas + VP 交易紀律的核心統計</p>
                     </div>
 
                     <div class="grid md:grid-cols-3 gap-8">
                         <div onclick="navigateTo('details', 'stock')" class="card-stock group p-12 rounded-[3rem] shadow-2xl cursor-pointer transform hover:-translate-y-3 transition-all duration-300 text-white relative overflow-hidden border border-white/10">
                             <i class="fas fa-chart-line text-6xl mb-8 block"></i>
                             <h3 class="text-3xl font-black">台股市場紀錄</h3>
-                            <p class="text-blue-100 opacity-80 mt-2 font-bold text-lg">Stock Trading</p>
+                            <p class="text-blue-100 opacity-80 mt-2 font-bold text-lg">Stock Records</p>
                         </div>
                         <div onclick="navigateTo('details', 'gold')" class="card-gold group p-12 rounded-[3rem] shadow-2xl cursor-pointer transform hover:-translate-y-3 transition-all duration-300 text-white relative overflow-hidden border border-white/10">
                             <i class="fas fa-coins text-6xl mb-8 block"></i>
                             <h3 class="text-3xl font-black">黃金市場紀錄</h3>
-                            <p class="text-amber-100 opacity-80 mt-2 font-bold text-lg">XAUUSD Trading</p>
+                            <p class="text-amber-100 opacity-80 mt-2 font-bold text-lg">XAUUSD Records</p>
                         </div>
                         <div onclick="navigateTo('strategy')" class="card-strategy group p-12 rounded-[3rem] shadow-2xl cursor-pointer transform hover:-translate-y-3 transition-all duration-300 text-white relative overflow-hidden border border-white/10">
                             <i class="fas fa-shield-halved text-6xl mb-8 block text-purple-200"></i>
@@ -433,19 +205,19 @@
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-12">
-                        <div class="bg-slate-900 p-10 md:p-14 rounded-[2.5rem] border-2 border-slate-800 shadow-sm text-center">
-                            <p class="text-sm font-black text-slate-500 mb-2 uppercase tracking-widest">目前勝率</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-10 mb-12">
+                        <div class="bg-slate-900 p-10 md:p-12 rounded-[3rem] border-2 border-slate-800 shadow-sm text-center">
+                            <p class="text-sm font-black text-slate-500 mb-2 uppercase tracking-widest">目前勝率統計</p>
                             <span class="text-5xl md:text-6xl font-black text-blue-500">${winRate}%</span>
                         </div>
-                        <div class="bg-slate-900 p-10 md:p-14 rounded-[2.5rem] border-2 border-slate-800 shadow-sm text-center">
-                            <p class="text-sm font-black text-slate-500 mb-2 uppercase tracking-widest">統計單數</p>
+                        <div class="bg-slate-900 p-10 md:p-12 rounded-[3rem] border-2 border-slate-800 shadow-sm text-center">
+                            <p class="text-sm font-black text-slate-500 mb-2 uppercase tracking-widest">統計單數累計</p>
                             <span class="text-5xl md:text-6xl font-black text-slate-200">${data.length}</span>
                         </div>
                     </div>
 
                     <div class="space-y-8">
-                        ${data.length === 0 ? `<div class="p-32 text-center text-slate-600 text-2xl italic bg-slate-900 rounded-[4rem] border border-dashed border-slate-800">無任何紀錄</div>` : ''}
+                        ${data.length === 0 ? `<div class="p-32 text-center text-slate-600 text-2xl italic bg-slate-900 rounded-[4rem] border border-dashed border-slate-800">尚未建立紀錄</div>` : ''}
                         ${data.map(item => {
                             const result = determineResult(item.type, item.entryPrice, item.exitPrice);
                             const isSettled = item.exitPrice && item.exitPrice.trim() !== "";
@@ -474,14 +246,14 @@
                                     </div>
                                     
                                     <div class="grid grid-cols-2 md:grid-cols-4 gap-10 mb-10">
-                                        <div><p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">進場價 / 單位</p><p class="font-mono font-black text-slate-200 text-2xl">${item.entryPrice} / ${item.units}</p></div>
-                                        <div><p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">出場價格</p><p class="font-mono font-black text-blue-400 text-2xl">${item.exitPrice || '-'}</p></div>
-                                        <div><p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">盈虧比 (R)</p><p class="font-mono font-black text-purple-400 text-2xl">${calculateRR(item.entryPrice, item.tp, item.sl)} R</p></div>
-                                        <div><p class="text-slate-500 text-xs font-bold mb-1 uppercase tracking-widest">判定結果</p><p class="font-black text-2xl ${result === '獲利' ? 'text-red-400' : (result === '虧損' ? 'text-green-400' : 'text-slate-300')}">${result}</p></div>
+                                        <div><p class="text-slate-500 text-sm font-bold mb-1 uppercase tracking-widest text-xs">進場價 / 單位</p><p class="font-mono font-black text-slate-200 text-2xl">${item.entryPrice} / ${item.units}</p></div>
+                                        <div><p class="text-slate-500 text-sm font-bold mb-1 uppercase tracking-widest text-xs">出場價格</p><p class="font-mono font-black text-blue-400 text-2xl">${item.exitPrice || '-'}</p></div>
+                                        <div><p class="text-slate-500 text-sm font-bold mb-1 uppercase tracking-widest text-xs">盈虧比 (R)</p><p class="font-mono font-black text-purple-400 text-2xl">${calculateRR(item.entryPrice, item.tp, item.sl)} R</p></div>
+                                        <div><p class="text-slate-500 text-sm font-bold mb-1 uppercase tracking-widest text-xs">判定結果</p><p class="font-black text-2xl ${result === '獲利' ? 'text-red-400' : (result === '虧損' ? 'text-green-400' : 'text-slate-400')}">${result}</p></div>
                                     </div>
 
                                     <div class="bg-slate-800/50 p-8 rounded-[2rem] text-lg text-slate-400 leading-relaxed border border-slate-700/50">
-                                        <strong class="text-slate-200 font-black">回測反思：</strong> ${item.reflection || '無備註'}
+                                        <strong class="text-slate-200 font-black">回測與反思：</strong> ${item.reflection || '無備註'}
                                     </div>
                                 </div>
                             </div>
@@ -498,6 +270,9 @@
             return 'bg-slate-800 text-slate-500 border-slate-700';
         }
 
+        /**
+         * 5. 表單邏輯
+         */
         window.switchInputMethod = (method) => {
             const autoBox = document.getElementById('auto-lookup-box');
             const manualBox = document.getElementById('manual-input-box');
@@ -518,14 +293,12 @@
         window.lookupStockId = (id) => {
             const display = document.getElementById('auto-lookup-result');
             const hiddenInput = document.getElementById('item-hidden-input');
-            const stockMap = { "2330": "台積電", "2317": "鴻海", "2454": "聯發科", "2303": "聯電", "2603": "長榮", "2881": "富邦金" };
-            
             if (stockMap[id]) {
                 display.innerText = `找到標的：${stockMap[id]}`;
                 display.className = "mt-2 text-sm text-blue-400 font-black";
                 hiddenInput.value = `${id} ${stockMap[id]}`;
             } else {
-                display.innerText = id.length >= 4 ? "查無此代號，請使用手動輸入" : "請輸入 4 碼代號";
+                display.innerText = id.length >= 4 ? "查無代號，請使用手動輸入" : "請輸入 4 碼代號";
                 display.className = "mt-2 text-sm text-slate-500 font-bold";
                 hiddenInput.value = "";
             }
@@ -546,7 +319,7 @@
             container.innerHTML = `
                 <div class="page-transition max-w-7xl mx-auto mb-32">
                     <button onclick="navigateTo('details', '${marketType}')" class="text-slate-500 hover:text-blue-400 mb-10 flex items-center gap-3 font-black text-xl transition-all">
-                        <i class="fas fa-chevron-left"></i> 取消並返回
+                        <i class="fas fa-chevron-left"></i> 放棄並返回
                     </button>
 
                     <div class="bg-slate-900 rounded-[4rem] shadow-2xl border border-slate-800 overflow-hidden">
@@ -557,8 +330,9 @@
                         <form id="trading-form" class="p-14 space-y-14">
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
                                 <div><label class="form-label">進場日期</label><input type="date" name="date" value="${record.date}" class="form-input" required></div>
+                                
                                 <div class="md:col-span-1">
-                                    <label class="form-label">交易標定</label>
+                                    <label class="form-label">交易標的</label>
                                     ${!isGold ? `
                                     <div class="flex gap-2 mb-4">
                                         <div id="tab-auto" class="input-tab active" onclick="switchInputMethod('auto')">代號查找</div>
@@ -566,7 +340,7 @@
                                     </div>
                                     <div id="auto-lookup-box">
                                         <input type="text" placeholder="例如：2330" class="form-input" oninput="lookupStockId(this.value)">
-                                        <p id="auto-lookup-result" class="mt-2 text-sm text-slate-500 font-bold">自動匹配名稱</p>
+                                        <p id="auto-lookup-result" class="mt-2 text-sm text-slate-500 font-bold">系統自動匹配名稱</p>
                                         <input type="hidden" id="item-hidden-input" name="item" value="${record.item}">
                                     </div>
                                     <div id="manual-input-box" class="hidden">
@@ -577,6 +351,7 @@
                                     <input type="hidden" name="item" value="黃金 XAUUSD">
                                     `}
                                 </div>
+
                                 <div>
                                     <label class="form-label">交易方向</label>
                                     <select name="type" id="type-select" class="form-input font-black" onchange="updateFormUI(this.value, '${marketType}')">
@@ -587,7 +362,7 @@
                             </div>
 
                             <section>
-                                <h3 class="text-xl font-black text-blue-500 mb-8 border-b border-slate-800 pb-3">核心評分與等級權重</h3>
+                                <h3 class="text-xl font-black text-blue-500 mb-8 border-b border-slate-800 pb-3 uppercase tracking-widest">核心評分與等級權重</h3>
                                 <div class="grid md:grid-cols-2 gap-12">
                                     <div class="space-y-4" id="condition-section"></div>
                                     <div class="space-y-4" id="rank-section"></div>
@@ -595,22 +370,22 @@
                             </section>
 
                             <section>
-                                <h3 class="text-xl font-black text-blue-500 mb-8 border-b border-slate-800 pb-3">交易數據分析</h3>
+                                <h3 class="text-xl font-black text-blue-500 mb-8 border-b border-slate-800 pb-3 uppercase tracking-widest">交易數據分析</h3>
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
                                     <div><label class="form-label">單位 ${!isGold ? '(張)' : ''}</label><input type="text" name="units" value="${record.units}" class="form-input"></div>
-                                    <div><label class="form-label">進場價格</label><input type="text" id="entry-price" name="entryPrice" value="${record.entryPrice}" class="form-input" placeholder="請輸入進場點位" oninput="refreshCalculations()" required></div>
+                                    <div><label class="form-label">進場價格</label><input type="text" id="entry-price" name="entryPrice" value="${record.entryPrice}" class="form-input" placeholder="進場價格" oninput="refreshCalculations()" required></div>
                                     <div><label class="form-label">停利 TP</label><input type="text" id="tp-price" name="tp" value="${record.tp}" class="form-input" placeholder="獲利目標" oninput="refreshCalculations()"></div>
                                     <div><label class="form-label">停損 SL</label><input type="text" id="sl-price" name="sl" value="${record.sl}" class="form-input" placeholder="防守位" oninput="refreshCalculations()"></div>
                                 </div>
                                 <div class="mt-10">
-                                    <label class="form-label text-blue-400 text-xs uppercase tracking-widest">出場價格 (填寫後自動判定結單與勝負)</label>
+                                    <label class="form-label text-blue-400 text-xs uppercase tracking-widest">出場價格 (填寫後自動判定結單)</label>
                                     <input type="text" id="exit-price" name="exitPrice" value="${record.exitPrice}" class="form-input border-blue-500/50" oninput="refreshCalculations()">
                                 </div>
                                 
                                 <div class="mt-10 bg-slate-800 text-white p-10 rounded-[2.5rem] flex flex-col md:flex-row justify-between items-center shadow-inner border border-slate-700">
                                     <div class="flex gap-10">
-                                        <div><span class="text-slate-500 font-bold block mb-1 uppercase text-xs">盈虧比</span><span id="rr-preview" class="text-3xl font-black text-purple-400">0.0 R</span></div>
-                                        <div><span class="text-slate-500 font-bold block mb-1 uppercase text-xs">判定</span><span id="result-preview" class="text-3xl font-black text-white">-</span></div>
+                                        <div><span class="text-slate-500 font-bold block mb-1 uppercase text-xs">預計盈虧比</span><span id="rr-preview" class="text-3xl font-black text-purple-400">0.0 R</span></div>
+                                        <div><span class="text-slate-500 font-bold block mb-1 uppercase text-xs">判定結果</span><span id="result-preview" class="text-3xl font-black text-white">-</span></div>
                                     </div>
                                     <div class="text-center md:text-right">
                                         <span class="text-slate-500 font-bold block mb-1 uppercase text-xs">綜合得分</span>
@@ -621,12 +396,12 @@
 
                             <section class="w-full">
                                 <label class="form-label">複盤與檢討紀錄</label>
-                                <textarea name="reflection" rows="14" class="form-input block w-full" style="width: 100% !important; min-width: 100% !important;" placeholder="記錄您的心理狀態、紀律執行或技術細節...">${record.reflection}</textarea>
+                                <textarea name="reflection" rows="14" class="form-input block w-full" style="width: 100% !important; min-width: 100% !important;" placeholder="寫下當下的心理狀態、執行紀律、回測細節...">${record.reflection}</textarea>
                             </section>
 
                             <div class="pt-10">
-                                <button type="button" onclick="handleSave('${marketType}', '${record.id}')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-8 rounded-[2rem] shadow-2xl transition-all active:scale-[0.98] text-2xl uppercase border border-blue-400/30 tracking-widest">
-                                    儲存並同步到 GitHub
+                                <button type="button" onclick="handleSave('${marketType}', '${id}')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-8 rounded-[2rem] shadow-2xl transition-all active:scale-[0.98] text-2xl uppercase border border-blue-400/30 tracking-widest">
+                                    儲存交易紀錄
                                 </button>
                             </div>
                         </form>
@@ -641,23 +416,12 @@
             const condEl = document.getElementById('condition-section');
             const rankEl = document.getElementById('rank-section');
             let conds = (tradeType === '多') ? ['Vegas通道往上', 'RSI黃金交叉'] : ['Vegas通道往下', 'RSI死亡交叉'];
-            let ranks = (tradeType === '多') 
-                ? [{n:'金單',d:'VAL插針'}, {n:'銀單',d:'VAL/POC區間'}, {n:'銅單',d:'POC處'}] 
-                : [{n:'金單',d:'VAH插針'}, {n:'銀單',d:'VAL/POC區間'}, {n:'銅單',d:'POC處'}];
-            condEl.innerHTML = conds.map(c => 
-                `<label class="checkbox-card"><input type="checkbox" name="conditions" value="${c}" ${savedConds.includes(c)?'checked':''} onchange="refreshCalculations()"> <span class="text-base font-black text-slate-200">${c}</span></label>`
-            ).join('');
-            rankEl.innerHTML = ranks.map(r => 
-                `<label class="checkbox-card ${savedRank === r.n ? 'ring-4 ring-blue-500 bg-slate-800' : ''}">
-                    <input type="radio" name="rank" value="${r.n}" ${savedRank === r.n ? 'checked' : ''} onchange="refreshCalculations()"> 
-                    <div class="flex-1 flex justify-between items-center">
-                        <div class="flex flex-col">
-                            <span class="font-black text-slate-200 text-lg">${r.n}</span>
-                            <span class="text-xs text-slate-500 font-bold">${r.d}</span>
-                        </div>
-                    </div>
-                </label>`
-            ).join('');
+            let ranks = (tradeType === '多') ? 
+                [{n:'金單',d:'VAL插針'}, {n:'銀單',d:'VAL/POC區間'}, {n:'銅單',d:'POC處'}] : 
+                [{n:'金單',d:'VAH插針'}, {n:'銀單',d:'VAL/POC區間'}, {n:'銅單',d:'POC處'}];
+            
+            condEl.innerHTML = conds.map(c => `<label class="checkbox-card"><input type="checkbox" name="conditions" value="${c}" ${savedConds.includes(c)?'checked':''} onchange="refreshCalculations()"> <span class="text-base font-black text-slate-200">${c}</span></label>`).join('');
+            rankEl.innerHTML = ranks.map(r => `<label class="checkbox-card ${savedRank === r.n ? 'ring-4 ring-blue-500 bg-slate-800' : ''}"><input type="radio" name="rank" value="${r.n}" ${savedRank === r.n ? 'checked' : ''} onchange="refreshCalculations()"> <div class="flex-1 flex justify-between items-center"><div class="flex flex-col"><span class="font-black text-slate-200 text-lg">${r.n}</span><span class="text-xs text-slate-500 font-bold">${r.d}</span></div></div></label>`).join('');
         };
 
         window.refreshCalculations = () => {
@@ -675,12 +439,11 @@
             document.getElementById('rr-preview').innerText = calculateRR(entry, tp, sl) + " R";
 
             const rank = document.querySelector('input[name="rank"]:checked')?.value;
-            const conditions = Array.from(document.querySelectorAll('input[name="conditions"]:checked')).map(e => e.value);
-            const score = calculateTradeScore({ rank, conditions });
+            const score = calculateTradeScore({ rank, conditions: Array.from(document.querySelectorAll('input[name="conditions"]:checked')) });
             document.getElementById('score-preview').innerText = score + " Pts";
         };
 
-        window.handleSave = async (market, id) => {
+        window.handleSave = (market, id) => {
             const form = document.getElementById('trading-form');
             const formData = new FormData(form);
             const record = {
@@ -698,88 +461,20 @@
                 reflection: formData.get('reflection'),
                 timestamp: Date.now()
             };
+
             const index = tradingData[market].findIndex(r => r.id === id);
             if (index > -1) tradingData[market][index] = record;
             else tradingData[market].unshift(record);
 
-            // 同步到 GitHub
-            const success = await saveUserDataToGitHub();
-            if (success) {
-                alert('✅ 交易紀錄已儲存並同步到 GitHub');
-            } else {
-                alert('⚠️ 交易紀錄已儲存，但 GitHub 同步失敗');
-            }
+            saveData();
             navigateTo('details', market);
         };
 
-        window.deleteTrade = async (market, id) => {
+        window.deleteTrade = (market, id) => {
             if (confirm('確定永久刪除？')) {
                 tradingData[market] = tradingData[market].filter(r => r.id !== id);
-                await saveUserDataToGitHub();
-                alert('✅ 已刪除');
+                saveData();
                 navigateTo('details', market);
-            }
-        };
-
-        function renderSettings(container) {
-            container.innerHTML = `
-                <div class="page-transition">
-                    <button onclick="navigateTo('home')" class="text-slate-500 hover:text-blue-400 mb-10 flex items-center gap-3 font-black text-xl transition-all">
-                        <i class="fas fa-chevron-left"></i> 返回首頁
-                    </button>
-
-                    <div class="bg-slate-900 rounded-[3rem] border border-slate-800 p-12 shadow-2xl max-w-2xl">
-                        <h2 class="text-3xl font-black text-white mb-8">設定</h2>
-
-                        <div class="space-y-8">
-                            <div>
-                                <h3 class="text-xl font-black text-blue-500 mb-4">帳號信息</h3>
-                                <p class="text-slate-400 mb-2">登入信箱：<span class="text-blue-400 font-bold">${currentUserEmail}</span></p>
-                                <p class="text-slate-400 mb-4">帳號識別碼：<span class="text-slate-300 font-mono text-xs break-all">${currentUserId.substring(0, 16)}...</span></p>
-                            </div>
-
-                            <hr class="border-slate-700">
-
-                            <div>
-                                <h3 class="text-xl font-black text-blue-500 mb-4">本地資料</h3>
-                                <p class="text-slate-400 mb-2">股票紀錄：${tradingData.stock.length} 筆</p>
-                                <p class="text-slate-400 mb-4">黃金紀錄：${tradingData.gold.length} 筆</p>
-                                <button onclick="exportDataAsJSON()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-black py-4 rounded-[2rem] transition-all">
-                                    <i class="fas fa-download mr-2"></i> 下載本地資料 (JSON)
-                                </button>
-                            </div>
-
-                            <hr class="border-slate-700">
-
-                            <div>
-                                <h3 class="text-xl font-black text-blue-500 mb-4">同步狀態</h3>
-                                <p class="text-slate-400 mb-4">✅ 所有資料自動同步至 GitHub</p>
-                                <button onclick="manualSyncGitHub()" class="w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 rounded-[2rem] transition-all">
-                                    <i class="fas fa-cloud-upload-alt mr-2"></i> 手動同步
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        window.exportDataAsJSON = () => {
-            const dataStr = JSON.stringify(tradingData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `trading_data_${currentUserEmail.split('@')[0]}_${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-        };
-
-        window.manualSyncGitHub = async () => {
-            const result = await saveUserDataToGitHub();
-            if (result) {
-                alert('✅ 已同步到 GitHub');
-            } else {
-                alert('❌ 同步失敗');
             }
         };
 
@@ -795,44 +490,15 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
                         <div class="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-sm"><h3 class="text-2xl font-black text-blue-500 mb-6">1. 趨勢確認 (Trend)</h3><p class="text-slate-400 text-lg">觀察大時區 Vegas 通道。價格在通道之上且通道向上為多頭；反之為空頭。絕不逆勢而為。</p></div>
-                        <div class="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-sm"><h3 class="text-2xl font-black text-blue-500 mb-6">2. 基本面加分 (Fundamental)</h3><p class="text-slate-400 text-lg">觀察營收表現、利率預期或宏觀環境。良好的基本面決定了持倉信心。</p></div>
+                        <div class="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-sm"><h3 class="text-2xl font-black text-blue-500 mb-6">2. 基本面加分 (Fundamental)</h3><p class="text-slate-400 text-lg">觀察營收表現、利率預期或宏觀環境。良好的基本面決定了單子的持有信心與品質。</p></div>
                         <div class="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-sm"><h3 class="text-2xl font-black text-blue-500 mb-6">3. 消息面加分 (News)</h3><p class="text-slate-400 text-lg">關注地緣政治、法人籌碼或突發消息。消息面是價格快速脫離成本區的觸媒。</p></div>
-                        <div class="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-sm"><h3 class="text-2xl font-black text-blue-500 mb-6">4. 技術執行 (Technical)</h3><p class="text-slate-400 text-lg">依據 VP 等級判斷入場，結合 RSI 交叉扣板機。嚴格執行 TP/SL。</p></div>
+                        <div class="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-sm"><h3 class="text-2xl font-black text-blue-500 mb-6">4. 技術執行 (Technical)</h3><p class="text-slate-400 text-lg">依據 VP 等級判斷入場點，結合 RSI 交叉扣板機。嚴格執行 TP/SL 紀律。</p></div>
                     </div>
                 </div>
             `;
         }
 
-        /**
-         * 交易判定邏輯
-         */
-        function determineResult(type, entry, exit) {
-            const e = parseFloat(entry);
-            const x = parseFloat(exit);
-            if (isNaN(e) || isNaN(x)) return "待定";
-            if (type === '多') {
-                return x > e ? "獲利" : (x < e ? "虧損" : "平手");
-            } else {
-                return x < e ? "獲利" : (x > e ? "虧損" : "平手");
-            }
-        }
-
-        function calculateTradeScore(record) {
-            let score = 0;
-            if (record.rank === '金單') score += 40;
-            else if (record.rank === '銀單') score += 25;
-            else if (record.rank === '銅單') score += 10;
-            (record.conditions || []).forEach(() => score += 10);
-            return Math.min(score, 100);
-        }
-
-        function calculateRR(entry, tp, sl) {
-            const e = parseFloat(entry);
-            const t = parseFloat(tp);
-            const s = parseFloat(sl);
-            if (isNaN(e) || isNaN(t) || isNaN(s) || e === s) return "0.0";
-            return (Math.abs(t - e) / Math.abs(e - s)).toFixed(1);
-        }
+        window.onload = () => navigateTo('home');
     </script>
 </body>
 </html>
