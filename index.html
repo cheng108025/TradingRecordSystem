@@ -662,13 +662,42 @@
                     </div>
 
                     <div class="row mb-4">
-                        <div class="col-sm-6 col-md-6 mb-3">
+                        <div class="col-sm-6 col-md-4 mb-3">
                             <div class="stat-box">
                                 <div class="stat-label">總 R 數</div>
                                 <div class="stat-value ${totalR >= 0 ? 'text-success' : 'text-danger'}">${totalR.toFixed(1)} R</div>
                                 <p class="text-secondary small mt-2 mb-0">累積實際 R（已結單）</p>
                             </div>
                         </div>
+                        <div class="col-sm-6 col-md-4 mb-3">
+                            <div class="stat-box">
+                                <div class="stat-label">多單 R 數</div>
+                                <div class="stat-value ${(() => {
+                                    const longR = settledAll.filter(d => d.type === '多').reduce((acc, d) => acc + calculateFinalRR(d.type, d.entryPrice, d.sl, d.exitPrice), 0);
+                                    return longR >= 0 ? 'text-success' : 'text-danger';
+                                })()}">${(() => {
+                                    const longR = settledAll.filter(d => d.type === '多').reduce((acc, d) => acc + calculateFinalRR(d.type, d.entryPrice, d.sl, d.exitPrice), 0);
+                                    return longR.toFixed(1);
+                                })()}</div>
+                                <p class="text-secondary small mt-2 mb-0">📈 多頭累計</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-4 mb-3">
+                            <div class="stat-box">
+                                <div class="stat-label">空單 R 數</div>
+                                <div class="stat-value ${(() => {
+                                    const shortR = settledAll.filter(d => d.type === '空').reduce((acc, d) => acc + calculateFinalRR(d.type, d.entryPrice, d.sl, d.exitPrice), 0);
+                                    return shortR >= 0 ? 'text-success' : 'text-danger';
+                                })()}">${(() => {
+                                    const shortR = settledAll.filter(d => d.type === '空').reduce((acc, d) => acc + calculateFinalRR(d.type, d.entryPrice, d.sl, d.exitPrice), 0);
+                                    return shortR.toFixed(1);
+                                })()}</div>
+                                <p class="text-secondary small mt-2 mb-0">📉 空頭累計</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
                         <div class="col-sm-6 col-md-6 mb-3">
                             <div class="stat-box">
                                 <div class="stat-label">實際盈虧</div>
