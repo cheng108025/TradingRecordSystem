@@ -627,8 +627,30 @@
                     <div class="row mb-4">
                         <div class="col-sm-6 col-md-3 mb-3">
                             <div class="stat-box">
-                                <div class="stat-label">目前勝率統計</div>
+                                <div class="stat-label">整體勝率統計</div>
                                 <div class="stat-value text-primary">${winRate}%</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3 mb-3">
+                            <div class="stat-box">
+                                <div class="stat-label">多單勝率</div>
+                                <div class="stat-value text-info">${(() => {
+                                    const longSettled = settledAll.filter(d => d.type === '多');
+                                    const longWins = longSettled.filter(d => determineResult(d.type, d.entryPrice, d.exitPrice) === '獲利').length;
+                                    return longSettled.length > 0 ? ((longWins / longSettled.length) * 100).toFixed(1) : '0.0';
+                                })()}%</div>
+                                <p class="text-secondary small mt-2 mb-0">📈 Long Position</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3 mb-3">
+                            <div class="stat-box">
+                                <div class="stat-label">空單勝率</div>
+                                <div class="stat-value text-warning">${(() => {
+                                    const shortSettled = settledAll.filter(d => d.type === '空');
+                                    const shortWins = shortSettled.filter(d => determineResult(d.type, d.entryPrice, d.exitPrice) === '獲利').length;
+                                    return shortSettled.length > 0 ? ((shortWins / shortSettled.length) * 100).toFixed(1) : '0.0';
+                                })()}%</div>
+                                <p class="text-secondary small mt-2 mb-0">📉 Short Position</p>
                             </div>
                         </div>
                         <div class="col-sm-6 col-md-3 mb-3">
@@ -637,14 +659,17 @@
                                 <div class="stat-value">${data.length}</div>
                             </div>
                         </div>
-                        <div class="col-sm-6 col-md-3 mb-3">
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-sm-6 col-md-6 mb-3">
                             <div class="stat-box">
                                 <div class="stat-label">總 R 數</div>
                                 <div class="stat-value ${totalR >= 0 ? 'text-success' : 'text-danger'}">${totalR.toFixed(1)} R</div>
                                 <p class="text-secondary small mt-2 mb-0">累積實際 R（已結單）</p>
                             </div>
                         </div>
-                        <div class="col-sm-6 col-md-3 mb-3">
+                        <div class="col-sm-6 col-md-6 mb-3">
                             <div class="stat-box">
                                 <div class="stat-label">實際盈虧</div>
                                 <div class="stat-value ${totalPnL >= 0 ? 'text-primary' : 'text-danger'}">${totalPnL.toFixed(2)} ${pnlUnit}</div>
