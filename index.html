@@ -629,6 +629,7 @@
                             <div class="stat-box">
                                 <div class="stat-label">整體勝率統計</div>
                                 <div class="stat-value text-primary">${winRate}%</div>
+                                <p class="text-secondary small mt-2 mb-0">已結單勝率</p>
                             </div>
                         </div>
                         <div class="col-sm-6 col-md-3 mb-3">
@@ -657,9 +658,12 @@
                             <div class="stat-box">
                                 <div class="stat-label">總計單數累計</div>
                                 <div class="stat-value">${data.length}</div>
+                                <p class="text-secondary small mt-2 mb-0">全部交易</p>
                             </div>
                         </div>
                     </div>
+
+
 
                     <div class="row mb-4">
                         <div class="col-sm-6 col-md-4 mb-3">
@@ -708,12 +712,19 @@
                     </div>
 
                     <div class="d-flex gap-2 mb-4 scrollbar-hide flex-wrap" style="overflow-x: auto; padding-bottom: 0.5rem;">
-                        ${['全部', '未結單', '獲利單', '虧損單'].map(f => `
+                        ${['全部', '未結單', '獲利單', '虧損單'].map(f => {
+                            let count = 0;
+                            if (f === '全部') count = data.length;
+                            else if (f === '未結單') count = data.filter(d => !d.exitPrice || d.exitPrice.toString().trim() === "").length;
+                            else if (f === '獲利單') count = data.filter(d => d.exitPrice && determineResult(d.type, d.entryPrice, d.exitPrice) === '獲利').length;
+                            else if (f === '虧損單') count = data.filter(d => d.exitPrice && determineResult(d.type, d.entryPrice, d.exitPrice) === '虧損').length;
+                            return `
                             <button onclick="renderDetails(document.getElementById('app-container'), '${marketType}', '${f}', null)"
                                     class="input-tab ${filter === f && !sort ? 'active' : 'inactive'}" style="white-space: nowrap;">
-                                ${f}
+                                ${f}（${count}）
                             </button>
-                        `).join('')}
+                        `;
+                        }).join('')}
                         <div style="width: 100%; height: 2px; background: #334155; margin: 0 0 -0.5rem 0; flex-basis: 100%;"></div>
                         <button onclick="renderDetails(document.getElementById('app-container'), '${marketType}', '${filter}', null)"
                                 class="input-tab ${!window.currentSort ? 'active' : 'inactive'}" style="white-space: nowrap; font-size: 0.75rem;">
