@@ -504,10 +504,22 @@
             const e = parseFloat(record.entryPrice);
             const x = parseFloat(record.exitPrice);
             if (isNaN(e) || isNaN(x)) return 0;
-            if (marketType === 'gold' || marketType === 'euro') {
+            if (marketType === 'gold') {
                 const units = parseFloat(record.units || '0.01');
                 const diff = (record.type === '多') ? (x - e) : (e - x);
-                return (diff * 100 * units) - (0.06 * 2 * (units / 0.01));
+                // 原始利潤（乘以 1000）
+                const grossPnL = diff * 1000 * units;
+                // 手續費（按單位比例）0.03 × (單位 / 0.01) × 2
+                const commissionFee = 0.03 * (units / 0.01) * 2;
+                return grossPnL - commissionFee;
+            } else if (marketType === 'euro') {
+                const units = parseFloat(record.units || '0.01');
+                const diff = (record.type === '多') ? (x - e) : (e - x);
+                // 原始利潤（乘以 1000）
+                const grossPnL = diff * 1000 * units;
+                // 手續費（按單位比例）0.03 × (單位 / 0.01) × 2
+                const commissionFee = 0.03 * (units / 0.01) * 2;
+                return grossPnL - commissionFee;
             } else {
                 const units = parseFloat(record.units || '1');
                 const diff = (record.type === '多') ? (x - e) : (e - x);
@@ -806,7 +818,7 @@
                                     </div>
                                     <div class="col text-center">
                                         <p class="small text-secondary fw-bold mb-1 text-uppercase">判定結果</p>
-                                        <p class="fw-black ${result === '獲利' ? 'text-danger' : (result === '虧損' ? 'text-success' : 'text-secondary')}">${result}</p>
+                                        <p class="fw-black ${result === '獲利' ? 'text-primary' : (result === '虧損' ? 'text-danger' : 'text-secondary')}">${result}</p>
                                     </div>
                                     <div class="col text-center">
                                         <p class="small text-secondary fw-bold mb-1 text-uppercase">實際損益</p>
