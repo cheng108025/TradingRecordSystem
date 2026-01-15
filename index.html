@@ -663,7 +663,7 @@
                         </div>
                     </div>
 
-
+                    
 
                     <div class="row mb-4">
                         <div class="col-sm-6 col-md-4 mb-3">
@@ -1092,6 +1092,14 @@
                     <button onclick="navigateTo('home')" class="btn btn-link text-secondary mb-4 p-0 fw-black">
                         <i class="fas fa-chevron-left me-2"></i> 返回主頁
                     </button>
+                    
+                    <!-- 連結到外部 HackMD 文件 -->
+                    <div class="mb-4">
+                        <a href="https://hackmd.io/@1cheng1/SySoXjU6gg" target="_blank" class="btn btn-outline-info fw-bold">
+                            <i class="fas fa-external-link-alt me-2"></i> 檢視完整策略說明（HackMD）
+                        </a>
+                    </div>
+
                     <div class="d-flex align-items-center gap-3 mb-4">
                         <div class="bg-primary text-white p-3 rounded-3xl">
                             <i class="fas fa-scroll h4"></i>
@@ -1127,6 +1135,68 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- 交易策略表格版 -->
+                    <div class="bg-dark p-4 rounded-4xl border mt-4 mb-4">
+                        <h3 class="h6 fw-black text-info mb-3"><i class="fas fa-table me-2"></i>交易策略表格版（7步驟流程）</h3>
+                        <div class="table-responsive">
+                            <table class="table table-dark table-sm mb-0">
+                                <thead>
+                                    <tr class="border-bottom" style="border-color: #475569;">
+                                        <th class="text-info fw-black">步驟</th>
+                                        <th class="text-info fw-black">項目</th>
+                                        <th class="text-info fw-black">多單策略 (Long)</th>
+                                        <th class="text-info fw-black">空單策略 (Short)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-secondary small">
+                                    <tr class="border-bottom" style="border-color: #334155;">
+                                        <td class="fw-bold">1</td>
+                                        <td class="fw-bold">時間框架(4小時與1小時)</td>
+                                        <td>4H 觀察 + 1H 進場（禁止搶進）</td>
+                                        <td>4H 觀察 + 1H 進場（禁止搶進）</td>
+                                    </tr>
+                                    <tr class="border-bottom" style="border-color: #334155;">
+                                        <td class="fw-bold">2</td>
+                                        <td class="fw-bold">趨勢確認(4小時與1小時)</td>
+                                        <td>EMA144 &gt; 233 &gt; 377 &gt; 610 &gt; 987</td>
+                                        <td>EMA144 &lt; 233 &lt; 377 &lt; 610 &lt; 987</td>
+                                    </tr>
+                                    <tr class="border-bottom" style="border-color: #334155;">
+                                        <td class="fw-bold">3</td>
+                                        <td class="fw-bold">VP進場位置(1小時)</td>
+                                        <td>VAL 附近（最佳）或 POC 區間</td>
+                                        <td>VAH 附近（最佳）或 POC 區間</td>
+                                    </tr>
+                                    <tr class="border-bottom" style="border-color: #334155;">
+                                        <td class="fw-bold">4</td>
+                                        <td class="fw-bold">觸發訊號(1小時)</td>
+                                        <td>RSI(6,12) 黃金交叉 + 4H RSI &lt;70</td>
+                                        <td>RSI(6,12) 死亡交叉 + 4H RSI &gt;30</td>
+                                    </tr>
+                                    <tr class="border-bottom" style="border-color: #334155;">
+                                        <td class="fw-bold">5</td>
+                                        <td class="fw-bold">停損設定(1小時)</td>
+                                        <td>VAL</td>
+                                        <td>VAH</td>
+                                    </tr>
+                                    <tr class="border-bottom" style="border-color: #334155;">
+                                        <td class="fw-bold">6</td>
+                                        <td class="fw-bold">停利設定(1小時)</td>
+                                        <td>TP1: POC (出50%) | TP2: VAH (全出)</td>
+                                        <td>TP1: POC (出50%) | TP2: VAL (全出)</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">7</td>
+                                        <td class="fw-bold">加倉機制(1小時)</td>
+                                        <td>首單保本 + 再次出現 1H Vegas 回踩 + RSI 金叉</td>
+                                        <td>首單保本 + 再次出現 1H Vegas 反彈 + RSI 死叉</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <div class="bg-dark p-4 rounded-4xl border mt-4">
                         <h3 class="h6 fw-black text-info mb-3"><i class="fas fa-brain me-2"></i>總體交易心得與觀察</h3>
                         
