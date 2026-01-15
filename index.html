@@ -41,6 +41,10 @@
             background: linear-gradient(135deg, #78350f 0%, #b45309 100%);
             border: 1px solid rgba(255,255,255,0.1) !important;
         }
+        .card-euro { 
+            background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+            border: 1px solid rgba(255,255,255,0.1) !important;
+        }
         .card-strategy { 
             background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%);
             border: 1px solid rgba(255,255,255,0.1) !important;
@@ -397,16 +401,20 @@
         const initialData = {
             stock: [],
             gold: [],
+            euro: [],
             generalInsights: ''
         };
 
         let tradingData = JSON.parse(localStorage.getItem(STORAGE_KEY));
         const initMarker = localStorage.getItem(STORAGE_KEY + '_initialized');
 
-        if (!tradingData || !initMarker || (tradingData.stock.length === 0 && tradingData.gold.length === 0)) {
+        if (!tradingData || !initMarker || (tradingData.stock.length === 0 && tradingData.gold.length === 0 && tradingData.euro.length === 0)) {
             tradingData = initialData;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(tradingData));
             localStorage.setItem(STORAGE_KEY + '_initialized', 'true');
+        } else if (!tradingData.euro) {
+            tradingData.euro = [];
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tradingData));
         }
 
         function saveData() {
@@ -441,6 +449,7 @@
                     tradingData = {
                         stock: obj.stock,
                         gold: obj.gold,
+                        euro: obj.euro || [],
                         generalInsights: obj.generalInsights || ''
                     };
                     saveData();
@@ -495,7 +504,7 @@
             const e = parseFloat(record.entryPrice);
             const x = parseFloat(record.exitPrice);
             if (isNaN(e) || isNaN(x)) return 0;
-            if (marketType === 'gold') {
+            if (marketType === 'gold' || marketType === 'euro') {
                 const units = parseFloat(record.units || '0.01');
                 const diff = (record.type === '多') ? (x - e) : (e - x);
                 return (diff * 100 * units) - (0.06 * 2 * (units / 0.01));
@@ -550,21 +559,28 @@
                         <p class="fs-5 text-secondary mt-3 fw-bold" style="font-style: italic;">掌握趨勢，精準執行</p>
                     </div>
                     <div class="row mb-5">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <div class="card card-stock card-hover rounded-4xl p-5 text-white h-100" onclick="navigateTo('details', 'stock')" style="cursor: pointer;">
                                 <i class="fas fa-chart-line mb-4" style="font-size: 3.75rem;"></i>
                                 <h3 class="h4 fw-black">台股市場紀錄</h3>
                                 <p class="mb-0 fw-bold" style="opacity: 0.8;">Stock Records</p>
                             </div>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <div class="card card-gold card-hover rounded-4xl p-5 text-white h-100" onclick="navigateTo('details', 'gold')" style="cursor: pointer;">
                                 <i class="fas fa-coins mb-4" style="font-size: 3.75rem;"></i>
                                 <h3 class="h4 fw-black">黃金市場紀錄</h3>
                                 <p class="mb-0 fw-bold" style="opacity: 0.8;">XAUUSD Records</p>
                             </div>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
+                            <div class="card card-euro card-hover rounded-4xl p-5 text-white h-100" onclick="navigateTo('details', 'euro')" style="cursor: pointer;">
+                                <i class="fas fa-euro-sign mb-4" style="font-size: 3.75rem;"></i>
+                                <h3 class="h4 fw-black">歐元市場紀錄</h3>
+                                <p class="mb-0 fw-bold" style="opacity: 0.8;">EURUSD Records</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
                             <div class="card card-strategy card-hover rounded-4xl p-5 text-white h-100" onclick="navigateTo('strategy')" style="cursor: pointer;">
                                 <i class="fas fa-shield-halved mb-4" style="font-size: 3.75rem; color: #e9d5ff;"></i>
                                 <h3 class="h4 fw-black">交易策略框架</h3>
@@ -576,7 +592,7 @@
                     <div class="bg-dark border rounded-4xl p-4 d-flex flex-column flex-md-row justify-content-between gap-3 align-items-center">
                         <div class="flex-grow-1 text-secondary small">
                             <div class="fw-black text-light mb-1">交易紀錄備份與還原</div>
-                            <div>匯出目前所有台股 / 黃金 / 心得紀錄為 JSON 檔，日後可在其他瀏覽器匯入還原。</div>
+                            <div>匯出目前所有台股 / 黃金 / 歐元 / 心得紀錄為 JSON 檔，日後可在其他瀏覽器匯入還原。</div>
                         </div>
                         <div class="d-flex gap-2">
                             <button type="button" onclick="exportTradingData()" class="btn btn-success fw-bold">
@@ -617,7 +633,8 @@
             if (sort === 'long') filteredData = filteredData.filter(d => d.type === '多');
             else if (sort === 'short') filteredData = filteredData.filter(d => d.type === '空');
 
-            const pnlUnit = marketType === 'gold' ? 'USD' : 'TWD';
+            const pnlUnit = (marketType === 'gold' || marketType === 'euro') ? 'USD' : 'TWD';
+            const marketLabel = marketType === 'gold' ? '黃金 XAUUSD' : (marketType === 'euro' ? '歐元 EURUSD' : '台股市場');
 
             container.innerHTML = `
                 <div class="page-transition">
@@ -626,7 +643,7 @@
                             <button onclick="navigateTo('home')" class="btn btn-link text-secondary mb-3 p-0 fw-black">
                                 <i class="fas fa-chevron-left me-2"></i> 返回首頁
                             </button>
-                            <h2 class="h3 fw-black text-white">${marketType === 'gold' ? '黃金 XAUUSD' : '台股市場'}</h2>
+                            <h2 class="h3 fw-black text-white">${marketLabel}</h2>
                         </div>
                         <button onclick="navigateTo('form', {type: '${marketType}'})" class="btn-primary-custom d-flex align-items-center gap-2">
                             <i class="fas fa-plus"></i> 新增紀錄
@@ -672,8 +689,6 @@
                         </div>
                     </div>
 
-                    
-
                     <div class="row mb-4">
                         <div class="col-sm-6 col-md-4 mb-3">
                             <div class="stat-box">
@@ -688,7 +703,8 @@
                                 <div class="stat-value ${(() => {
                                     const longR = settledAll.filter(d => d.type === '多').reduce((acc, d) => acc + calculateFinalRR(d.type, d.entryPrice, d.sl, d.exitPrice), 0);
                                     return longR >= 0 ? 'text-success' : 'text-danger';
-                                })()}">${(() => {
+                                })()}">
+                                ${(() => {
                                     const longR = settledAll.filter(d => d.type === '多').reduce((acc, d) => acc + calculateFinalRR(d.type, d.entryPrice, d.sl, d.exitPrice), 0);
                                     return longR.toFixed(1);
                                 })()}</div>
@@ -701,7 +717,8 @@
                                 <div class="stat-value ${(() => {
                                     const shortR = settledAll.filter(d => d.type === '空').reduce((acc, d) => acc + calculateFinalRR(d.type, d.entryPrice, d.sl, d.exitPrice), 0);
                                     return shortR >= 0 ? 'text-success' : 'text-danger';
-                                })()}">${(() => {
+                                })()}">
+                                ${(() => {
                                     const shortR = settledAll.filter(d => d.type === '空').reduce((acc, d) => acc + calculateFinalRR(d.type, d.entryPrice, d.sl, d.exitPrice), 0);
                                     return shortR.toFixed(1);
                                 })()}</div>
@@ -767,7 +784,7 @@
                                                 ${isSettled ? '已結單' : '持倉中'}
                                             </span>
                                         </div>
-                                        <h3 class="h5 fw-black text-white mb-0">${item.item} <span class="${item.type === '多' ? 'text-primary fw-black' : 'text-danger fw-black'} badge" style="background: ${item.type === '多' ? 'rgba(37, 99, 235, 0.2)' : 'rgba(220, 38, 38, 0.2)'}">[${item.type === '多' ? '📈 多單' : '📉 空單'}]</span></h3>
+                                        <h3 class="h5 fw-black text-white mb-0">${item.item} <span class="${item.type === '多' ? 'text-primary fw-black' : 'text-danger fw-black'} badge" style="background: ${item.type === '多' ? 'rgba(37, 99, 235, 0.2)' : 'rgba(220, 38, 38, 0.2)'};">[${item.type === '多' ? '📈 多單' : '📉 空單'}]</span></h3>
                                     </div>
                                     <div class="d-flex gap-2">
                                         <button onclick="navigateTo('form', {type: '${marketType}', id: '${item.id}'})" class="btn btn-link text-secondary p-2"><i class="fas fa-edit"></i></button>
@@ -777,7 +794,7 @@
                                 <div class="row gap-4 mb-3">
                                     <div class="col text-center">
                                         <p class="small text-secondary fw-bold mb-1 text-uppercase">進場 / 單位</p>
-                                        <p class="font-monospace fw-black text-light">${item.entryPrice} / ${item.units} ${marketType === 'gold' ? '手' : '張'}</p>
+                                        <p class="font-monospace fw-black text-light">${item.entryPrice} / ${item.units} ${(marketType === 'gold' || marketType === 'euro') ? '手' : '張'}</p>
                                     </div>
                                     <div class="col text-center">
                                         <p class="small text-secondary fw-bold mb-1 text-uppercase">出場價格</p>
@@ -814,17 +831,17 @@
 
         function renderForm(container, marketType, id = undefined) {
             const isEdit = typeof id === 'string' && id !== '';
-            const isGold = marketType === 'gold';
+            const isGoldOrEuro = marketType === 'gold' || marketType === 'euro';
             let record = isEdit
                 ? tradingData[marketType].find(r => r.id === id)
                 : {
                     id: Date.now().toString(),
                     date: new Date().toISOString().split('T')[0],
-                    item: isGold ? '黃金 XAUUSD' : '',
+                    item: isGoldOrEuro ? (marketType === 'gold' ? '黃金 XAUUSD' : '歐元 EURUSD') : '',
                     type: '多',
                     rank: '',
                     entryPrice: '',
-                    units: isGold ? '0.01' : '1',
+                    units: isGoldOrEuro ? '0.01' : '1',
                     tp: '',
                     sl: '',
                     exitPrice: '',
@@ -841,7 +858,7 @@
                     </button>
                     <div class="bg-dark border rounded-4xl overflow-hidden">
                         <div class="bg-secondary bg-opacity-25 px-5 py-4 border-bottom text-center">
-                            <h2 class="h4 fw-black text-white mb-0">${isEdit ? '編輯' : '新增'} ${isGold ? '黃金' : '台股'} 紀錄</h2>
+                            <h2 class="h4 fw-black text-white mb-0">${isEdit ? '編輯' : '新增'} ${isGoldOrEuro ? (marketType === 'gold' ? '黃金' : '歐元') : '台股'} 紀錄</h2>
                         </div>
                         <form id="trading-form" class="p-5">
                             <div class="row mb-4">
@@ -852,7 +869,7 @@
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">交易標的</label>
                                     ${
-                                        !isGold
+                                        !isGoldOrEuro
                                         ? `
                                         <div class="d-flex gap-2 mb-2">
                                             <button type="button" id="tab-auto" class="input-tab active" onclick="switchInputMethod('auto')">自動輸入</button>
@@ -867,8 +884,8 @@
                                             <input type="text" class="form-control" placeholder="手動標的名稱" value="${record.item}" oninput="document.getElementById('item-hidden-input').value = this.value">
                                         </div>`
                                         : `
-                                        <input type="text" value="黃金 XAUUSD" class="form-control" readonly>
-                                        <input type="hidden" name="item" value="黃金 XAUUSD">
+                                        <input type="text" value="${marketType === 'gold' ? '黃金 XAUUSD' : '歐元 EURUSD'}" class="form-control" readonly>
+                                        <input type="hidden" name="item" value="${marketType === 'gold' ? '黃金 XAUUSD' : '歐元 EURUSD'}">
                                         `
                                     }
                                 </div>
@@ -914,8 +931,8 @@
                                 <h3 class="h6 fw-black text-info mb-3 border-bottom pb-2 text-uppercase">數據分析</h3>
                                 <div class="row align-items-end">
                                     <div class="col-md-3 mb-3">
-                                        <label class="form-label">單位 <span class="text-secondary small">(${isGold ? '手' : '張'})</span></label>
-                                        <input type="text" name="units" value="${record.units}" class="form-control" placeholder="${isGold ? '0.01 手' : '1 張'}">
+                                        <label class="form-label">單位 <span class="text-secondary small">(${isGoldOrEuro ? '手' : '張'})</span></label>
+                                        <input type="text" name="units" value="${record.units}" class="form-control" placeholder="${isGoldOrEuro ? '0.01 手' : '1 張'}">
                                     </div>
                                     <div class="col-md-3 mb-3">
                                         <label class="form-label">進場價格</label>
@@ -1318,4 +1335,3 @@
     </script>
 </body>
 </html>
-
