@@ -635,15 +635,16 @@
                 totalPnL += calculatePnL(d, marketType);
             });
 
-            let filteredData = data;
-            if (filter === '未結單') filteredData = data.filter(d => !d.exitPrice || d.exitPrice.toString().trim() === "");
-            else if (filter === '獲利單') filteredData = data.filter(d => d.exitPrice && determineResult(d.type, d.entryPrice, d.exitPrice) === '獲利');
-            else if (filter === '虧損單') filteredData = data.filter(d => d.exitPrice && determineResult(d.type, d.entryPrice, d.exitPrice) === '虧損');
-            else filteredData = data; // 全部
+            // --- 第一階段：依據「狀態」篩選資料 ---
+            let statusFilteredData = data;
+            if (filter === '未結單') statusFilteredData = data.filter(d => !d.exitPrice || d.exitPrice.toString().trim() === "");
+            else if (filter === '獲利單') statusFilteredData = data.filter(d => d.exitPrice && determineResult(d.type, d.entryPrice, d.exitPrice) === '獲利');
+            else if (filter === '虧損單') statusFilteredData = data.filter(d => d.exitPrice && determineResult(d.type, d.entryPrice, d.exitPrice) === '虧損');
             
-            // 按多空排序
-            if (sort === 'long') filteredData = filteredData.filter(d => d.type === '多');
-            else if (sort === 'short') filteredData = filteredData.filter(d => d.type === '空');
+            // --- 第二階段：依據「單別」篩選最終顯示資料 ---
+            let finalDisplayData = statusFilteredData;
+            if (sort === 'long') finalDisplayData = statusFilteredData.filter(d => d.type === '多');
+            else if (sort === 'short') finalDisplayData = statusFilteredData.filter(d => d.type === '空');
 
             const pnlUnit = (marketType === 'gold' || marketType === 'euro') ? 'USD' : 'TWD';
             const marketLabel = marketType === 'gold' ? '黃金 XAUUSD' : (marketType === 'euro' ? '歐元 EURUSD' : '台股市場');
@@ -663,6 +664,7 @@
                     </div>
 
                     <div class="row mb-4">
+                        <!-- 統計區塊保持不變 -->
                         <div class="col-sm-6 col-md-3 mb-3">
                             <div class="stat-box">
                                 <div class="stat-label">整體勝率統計</div>
@@ -768,20 +770,20 @@
                         <span class="small text-secondary fw-bold align-self-center" style="white-space: nowrap;">單別：</span>
                         <button onclick="renderDetails(document.getElementById('app-container'), '${marketType}', '${filter}', null)"
                                 class="input-tab ${!window.currentSort ? 'active' : 'inactive'}" style="white-space: nowrap; font-size: 0.75rem;">
-                            全部（${data.length}）
+                            全部（${statusFilteredData.length}）
                         </button>
                         <button onclick="renderDetails(document.getElementById('app-container'), '${marketType}', '${filter}', 'long')"
                                 class="input-tab ${window.currentSort === 'long' ? 'active' : 'inactive'}" style="white-space: nowrap; font-size: 0.75rem;">
-                            📈 多單（${data.filter(d => d.type === '多').length}）
+                            📈 多單（${statusFilteredData.filter(d => d.type === '多').length}）
                         </button>
                         <button onclick="renderDetails(document.getElementById('app-container'), '${marketType}', '${filter}', 'short')"
                                 class="input-tab ${window.currentSort === 'short' ? 'active' : 'inactive'}" style="white-space: nowrap; font-size: 0.75rem;">
-                            📉 空單（${data.filter(d => d.type === '空').length}）
+                            📉 空單（${statusFilteredData.filter(d => d.type === '空').length}）
                         </button>
                     </div>
 
                     <div class="space-y-4">
-                        ${filteredData.map(item => {
+                        ${finalDisplayData.map(item => {
                             const result = determineResult(item.type, item.entryPrice, item.exitPrice);
                             const isSettled = item.exitPrice && item.exitPrice.toString().trim() !== "";
                             const finalR = calculateFinalRR(item.type, item.entryPrice, item.sl, item.exitPrice);
@@ -843,6 +845,7 @@
             `;
         }
 
+        // 剩餘的函數（renderForm, handleSave, renderStrategy 等）保持不變
         function renderForm(container, marketType, id = undefined) {
             const isEdit = typeof id === 'string' && id !== '';
             const isGoldOrEuro = marketType === 'gold' || marketType === 'euro';
