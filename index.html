@@ -472,6 +472,10 @@
             else return x < e ? "獲利" : (x > e ? "虧損" : "平手");
         }
 
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
         function calculateTradeScore(record) {
             let score = 0;
             if (record.rank === '金單') score += 40;
@@ -507,32 +511,22 @@
             if (marketType === 'gold') {
                 const units = parseFloat(record.units || '0.01');
                 const diff = (record.type === '多') ? (x - e) : (e - x);
-                // 黃金：0.01手1點 = 1USD（係數100）
                 const grossPnL = diff * 100 * units;
-                // 手續費（按單位比例）0.03 × (單位 / 0.01) × 2
                 const commissionFee = 0.03 * (units / 0.01) * 2;
                 return grossPnL - commissionFee;
             } else if (marketType === 'euro') {
                 const units = parseFloat(record.units || '0.01');
                 const diff = (record.type === '多') ? (x - e) : (e - x);
-                // 歐元：0.01手1點 = 1USD（係數10000）
                 const grossPnL = diff * 10000 * units;
-                // 手續費（按單位比例）0.03 × (單位 / 0.01) × 2
                 const commissionFee = 0.03 * (units / 0.01) * 2;
                 return grossPnL - commissionFee;
             } else {
                 const units = parseFloat(record.units || '1');
                 const diff = (record.type === '多') ? (x - e) : (e - x);
-                
-                // 手續費（買進 + 賣出）
                 const commissionFee = (e * units * 1000 * 0.001425) + (x * units * 1000 * 0.001425);
-                
-                // 證交稅（只在賣出時扣，0.3%）
-                // 多單：賣出時扣；空單：買進時扣
                 const stockTax = record.type === '多' 
-                    ? (x * units * 1000 * 0.003)  // 多單賣出時扣
-                    : (e * units * 1000 * 0.003); // 空單買進時扣
-                
+                    ? (x * units * 1000 * 0.003)
+                    : (e * units * 1000 * 0.003);
                 return (diff * 1000 * units) - commissionFee - stockTax;
             }
         }
@@ -600,7 +594,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="bg-dark border rounded-4xl p-4 d-flex flex-column flex-md-row justify-content-between gap-3 align-items-center">
                         <div class="flex-grow-1 text-secondary small">
                             <div class="fw-black text-light mb-1">交易紀錄備份與還原</div>
@@ -639,11 +632,17 @@
             if (filter === '未結單') filteredData = data.filter(d => !d.exitPrice || d.exitPrice.toString().trim() === "");
             else if (filter === '獲利單') filteredData = data.filter(d => d.exitPrice && determineResult(d.type, d.entryPrice, d.exitPrice) === '獲利');
             else if (filter === '虧損單') filteredData = data.filter(d => d.exitPrice && determineResult(d.type, d.entryPrice, d.exitPrice) === '虧損');
-            else filteredData = data; // 全部
+            else filteredData = data;
             
-            // 按多空排序
-            if (sort === 'long') filteredData = filteredData.filter(d => d.type === '多');
-            else if (sort === 'short') filteredData = filteredData.filter(d => d.type === '空');
+            // 先取「只有狀態篩選」的結果（用來計算下面單別的數字）
+            const statusOnlyData = filteredData;
+            const statusTotal = statusOnlyData.length;
+            const statusLongCount = statusOnlyData.filter(d => d.type === '多').length;
+            const statusShortCount = statusOnlyData.filter(d => d.type === '空').length;
+            
+            // 再根據多空去進一步過濾畫面要顯示的
+            if (sort === 'long') filteredData = statusOnlyData.filter(d => d.type === '多');
+            else if (sort === 'short') filteredData = statusOnlyData.filter(d => d.type === '空');
 
             const pnlUnit = (marketType === 'gold' || marketType === 'euro') ? 'USD' : 'TWD';
             const marketLabel = marketType === 'gold' ? '黃金 XAUUSD' : (marketType === 'euro' ? '歐元 EURUSD' : '台股市場');
@@ -749,7 +748,9 @@
                         </div>
                     </div>
 
-                    <div class="d-flex gap-2 mb-4 scrollbar-hide flex-wrap" style="overflow-x: auto; padding-bottom: 0.5rem;">
+                    <!-- 第一行：交易狀態過濾 -->
+                    <div class="d-flex gap-2 mb-3 scrollbar-hide flex-wrap" style="overflow-x: auto; padding-bottom: 0.5rem;">
+                        <span class="small text-secondary fw-bold align-self-center" style="white-space: nowrap;">狀態：</span>
                         ${['全部', '未結單', '獲利單', '虧損單'].map(f => {
                             let count = 0;
                             if (f === '全部') count = data.length;
@@ -757,24 +758,28 @@
                             else if (f === '獲利單') count = data.filter(d => d.exitPrice && determineResult(d.type, d.entryPrice, d.exitPrice) === '獲利').length;
                             else if (f === '虧損單') count = data.filter(d => d.exitPrice && determineResult(d.type, d.entryPrice, d.exitPrice) === '虧損').length;
                             return `
-                            <button onclick="renderDetails(document.getElementById('app-container'), '${marketType}', '${f}', null)"
-                                    class="input-tab ${filter === f && !sort ? 'active' : 'inactive'}" style="white-space: nowrap;">
+                            <button onclick="renderDetails(document.getElementById('app-container'), '${marketType}', '${f}', window.currentSort)"
+                                    class="input-tab ${filter === f ? 'active' : 'inactive'}" style="white-space: nowrap;">
                                 ${f}（${count}）
                             </button>
                         `;
                         }).join('')}
-                        <div style="width: 100%; height: 2px; background: #334155; margin: 0 0 -0.5rem 0; flex-basis: 100%;"></div>
+                    </div>
+
+                    <!-- 第二行：多空單位過濾（顯示該狀態下的多空分布） -->
+                    <div class="d-flex gap-2 mb-4 scrollbar-hide flex-wrap" style="overflow-x: auto; padding-bottom: 0.5rem;">
+                        <span class="small text-secondary fw-bold align-self-center" style="white-space: nowrap;">單別：</span>
                         <button onclick="renderDetails(document.getElementById('app-container'), '${marketType}', '${filter}', null)"
-                                class="input-tab ${!window.currentSort ? 'active' : 'inactive'}" style="white-space: nowrap; font-size: 0.75rem;">
-                            全部
+                                class="input-tab ${!window.currentSort ? 'active' : 'inactive'}" style="white-space: nowrap;">
+                            全部（${statusTotal}）
                         </button>
                         <button onclick="renderDetails(document.getElementById('app-container'), '${marketType}', '${filter}', 'long')"
-                                class="input-tab ${window.currentSort === 'long' ? 'active' : 'inactive'}" style="white-space: nowrap; font-size: 0.75rem;">
-                            📈 多單
+                                class="input-tab ${window.currentSort === 'long' ? 'active' : 'inactive'}" style="white-space: nowrap;">
+                            📈 多單（${statusLongCount}）
                         </button>
                         <button onclick="renderDetails(document.getElementById('app-container'), '${marketType}', '${filter}', 'short')"
-                                class="input-tab ${window.currentSort === 'short' ? 'active' : 'inactive'}" style="white-space: nowrap; font-size: 0.75rem;">
-                            📉 空單
+                                class="input-tab ${window.currentSort === 'short' ? 'active' : 'inactive'}" style="white-space: nowrap;">
+                            📉 空單（${statusShortCount}）
                         </button>
                     </div>
 
@@ -841,303 +846,17 @@
             `;
         }
 
-        function renderForm(container, marketType, id = undefined) {
-            const isEdit = typeof id === 'string' && id !== '';
-            const isGoldOrEuro = marketType === 'gold' || marketType === 'euro';
-            let record = isEdit
-                ? tradingData[marketType].find(r => r.id === id)
-                : {
-                    id: Date.now().toString(),
-                    date: new Date().toISOString().split('T')[0],
-                    item: isGoldOrEuro ? (marketType === 'gold' ? '黃金 XAUUSD' : '歐元 EURUSD') : '',
-                    type: '多',
-                    rank: '',
-                    entryPrice: '',
-                    units: isGoldOrEuro ? '0.01' : '1',
-                    tp: '',
-                    sl: '',
-                    exitPrice: '',
-                    conditions: [],
-                    fundamental: false,
-                    news: false,
-                    reflection: ''
-                };
-
-            container.innerHTML = `
-                <div class="page-transition mb-5">
-                    <button onclick="navigateTo('details', '${marketType}')" class="btn btn-link text-secondary mb-4 p-0 fw-black">
-                        <i class="fas fa-chevron-left me-2"></i> 取消並返回
-                    </button>
-                    <div class="bg-dark border rounded-4xl overflow-hidden">
-                        <div class="bg-secondary bg-opacity-25 px-5 py-4 border-bottom text-center">
-                            <h2 class="h4 fw-black text-white mb-0">${isEdit ? '編輯' : '新增'} ${isGoldOrEuro ? (marketType === 'gold' ? '黃金' : '歐元') : '台股'} 紀錄</h2>
-                        </div>
-                        <form id="trading-form" class="p-5">
-                            <div class="row mb-4">
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">進場日期</label>
-                                    <input type="date" name="date" value="${record.date}" class="form-control" required>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">交易標的</label>
-                                    ${
-                                        !isGoldOrEuro
-                                        ? `
-                                        <div class="d-flex gap-2 mb-2">
-                                            <button type="button" id="tab-auto" class="input-tab active" onclick="switchInputMethod('auto')">自動輸入</button>
-                                            <button type="button" id="tab-manual" class="input-tab inactive" onclick="switchInputMethod('manual')">手動輸入</button>
-                                        </div>
-                                        <div id="auto-lookup-box">
-                                            <input type="text" placeholder="例如：2330" class="form-control" oninput="lookupStockId(this.value)">
-                                            <p id="auto-lookup-result" class="mt-2 small text-info fw-bold">自動匹配名稱</p>
-                                            <input type="hidden" id="item-hidden-input" name="item" value="${record.item}">
-                                        </div>
-                                        <div id="manual-input-box" class="d-none">
-                                            <input type="text" class="form-control" placeholder="手動標的名稱" value="${record.item}" oninput="document.getElementById('item-hidden-input').value = this.value">
-                                        </div>`
-                                        : `
-                                        <input type="text" value="${marketType === 'gold' ? '黃金 XAUUSD' : '歐元 EURUSD'}" class="form-control" readonly>
-                                        <input type="hidden" name="item" value="${marketType === 'gold' ? '黃金 XAUUSD' : '歐元 EURUSD'}">
-                                        `
-                                    }
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">交易方向</label>
-                                    <select name="type" id="type-select" class="form-control select-control fw-black" onchange="updateFormUI(this.value, '${marketType}')">
-                                        <option value="多" ${record.type === '多' ? 'selected' : ''} style="color: #2563eb;">📈 多單 (Long)</option>
-                                        <option value="空" ${record.type === '空' ? 'selected' : ''} style="color: #dc2626;">📉 空單 (Short)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <section class="mb-4">
-                                <h3 class="h6 fw-black text-info mb-3 border-bottom pb-2 text-uppercase">核心評分與等級權重</h3>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3" id="condition-section"></div>
-                                    <div class="col-md-6 mb-3" id="rank-section"></div>
-                                </div>
-                                <h3 class="h6 fw-black text-info mb-3 border-bottom pb-2 text-uppercase">加分項目</h3>
-                                <div class="row">
-                                    <div class="col-md-6 mb-2">
-                                        <label class="d-flex align-items-center gap-3 p-3 rounded border bg-dark border-secondary cursor-pointer" style="cursor: pointer;">
-                                            <input type="checkbox" name="fundamental" ${record.fundamental ? 'checked' : ''} onchange="refreshCalculations()" class="checkbox-input">
-                                            <div>
-                                                <div class="fw-black text-light">基本面加分</div>
-                                                <small class="text-secondary">營收與趨勢良好 +20 Pts</small>
-                                            </div>
-                                        </label>
-                                    </div>
-                                    <div class="col-md-6 mb-2">
-                                        <label class="d-flex align-items-center gap-3 p-3 rounded border bg-dark border-secondary cursor-pointer" style="cursor: pointer;">
-                                            <input type="checkbox" name="news" ${record.news ? 'checked' : ''} onchange="refreshCalculations()" class="checkbox-input">
-                                            <div>
-                                                <div class="fw-black text-light">消息面加分</div>
-                                                <small class="text-secondary">重大新聞或籌碼支撐 +20 Pts</small>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-                            </section>
-
-                            <section class="mb-4">
-                                <h3 class="h6 fw-black text-info mb-3 border-bottom pb-2 text-uppercase">數據分析</h3>
-                                <div class="row align-items-end">
-                                    <div class="col-md-3 mb-3">
-                                        <label class="form-label">單位 <span class="text-secondary small">(${isGoldOrEuro ? '手' : '張'})</span></label>
-                                        <input type="text" name="units" value="${record.units}" class="form-control" placeholder="${isGoldOrEuro ? '0.01 手' : '1 張'}">
-                                    </div>
-                                    <div class="col-md-3 mb-3">
-                                        <label class="form-label">進場價格</label>
-                                        <input type="text" id="entry-price" name="entryPrice" value="${record.entryPrice}" class="form-control" oninput="refreshCalculations()" required>
-                                    </div>
-                                    <div class="col-md-3 mb-3">
-                                        <label class="form-label">停利 TP</label>
-                                        <input type="text" id="tp-price" name="tp" value="${record.tp}" class="form-control" oninput="refreshCalculations()">
-                                    </div>
-                                    <div class="col-md-3 mb-3">
-                                        <label class="form-label">停損 SL</label>
-                                        <input type="text" id="sl-price" name="sl" value="${record.sl}" class="form-control" oninput="refreshCalculations()">
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label text-info fw-black">出場價格 (有數值即自動判定結單)</label>
-                                    <input type="text" id="exit-price" name="exitPrice" value="${record.exitPrice}" class="form-control" placeholder="填入出場價格" oninput="refreshCalculations()">
-                                </div>
-
-                                <div class="bg-secondary bg-opacity-10 p-4 rounded-3xl d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 border">
-                                    <div class="d-flex gap-4">
-                                        <div>
-                                            <span class="text-secondary small fw-bold text-uppercase d-block mb-1">預計盈虧比</span>
-                                            <span id="rr-preview" class="h5 fw-black text-primary">0.0 R</span>
-                                        </div>
-                                        <div>
-                                            <span class="text-secondary small fw-bold text-uppercase d-block mb-1">判定結果</span>
-                                            <span id="result-preview" class="h5 fw-black text-light">-</span>
-                                        </div>
-                                    </div>
-                                    <div class="text-center">
-                                        <span class="text-secondary small fw-bold text-uppercase d-block mb-1">綜合得分</span>
-                                        <span id="score-preview" class="h3 fw-black text-success">0 Pts</span>
-                                    </div>
-                                </div>
-                            </section>
-
-                            <section class="mb-4">
-                                <label class="form-label">複盤與檢討紀錄</label>
-                                <textarea name="reflection" rows="10" class="form-control textarea-large">${record.reflection}</textarea>
-                            </section>
-
-                            <div class="pt-3">
-                                <button type="button" onclick="handleSave('${marketType}', '${isEdit ? record.id : ''}')" class="btn btn-primary w-100 fw-black py-3 text-uppercase">
-                                    同步儲存交易紀錄
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `;
-            updateFormUI(record.type, marketType, record.conditions, record.rank);
-            refreshCalculations();
-        }
-
-        window.updateFormUI = (tradeType, marketType, savedConds = [], savedRank = '') => {
-            const condEl = document.getElementById('condition-section');
-            const rankEl = document.getElementById('rank-section');
-
-            const conds = (tradeType === '多')
-                ? ['Vegas通道往上', 'RSI黃金交叉']
-                : ['Vegas通道往下', 'RSI死亡交叉'];
-                    
-            condEl.innerHTML = `
-                <div class="bg-dark border rounded-3xl p-3 h-100 d-flex flex-column justify-content-center">
-                    <div class="d-flex flex-column gap-3 text-light fw-black">
-                        ${conds.map(c => `
-                            <label class="d-flex align-items-center gap-3 cursor-pointer" style="cursor: pointer;">
-                                <input type="checkbox" name="conditions" value="${c}" ${savedConds.includes(c) ? 'checked' : ''} onchange="refreshCalculations()" class="checkbox-input">
-                                <span>${c}</span>
-                            </label>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-
-            const ranks = (tradeType === '多')
-                ? [
-                    { n: '金單', d: 'VAL插針' },
-                    { n: '銀單', d: 'VAL / POC 區間' },
-                    { n: '銅單', d: 'POC 處' },
-                    { n: '無', d: '未分級' }
-                ]
-                : [
-                    { n: '金單', d: 'VAH插針' },
-                    { n: '銀單', d: 'VAL / POC 區間' },
-                    { n: '銅單', d: 'POC 處' },
-                    { n: '無', d: '未分級' }
-                ];
-
-            rankEl.innerHTML = ranks.map(r => {
-                const baseClass = r.n === '金單' ? 'rank-gold' : (r.n === '銀單' ? 'rank-silver' : (r.n === '銅單' ? 'rank-bronze' : 'rank-none'));
-                const selected = savedRank === r.n ? 'border-white border-3' : '';
-                const textClass = (r.n === '金單' || r.n === '銀單' || r.n === '銅單') ? '' : 'text-light';
-
-                return `
-                    <label class="d-flex align-items-center gap-3 p-3 rounded border-2 cursor-pointer transition mb-2 ${baseClass} ${textClass} ${selected}" style="cursor: pointer;">
-                        <input type="radio" name="rank" value="${r.n}" ${savedRank === r.n ? 'checked' : ''} onchange="refreshCalculations()" class="checkbox-input">
-                        <div class="flex-grow-1">
-                            <div class="fw-black">${r.n}</div>
-                            <small class="opacity-75">${r.d}</small>
-                        </div>
-                    </label>
-                `;
-            }).join('');
-        };
-
-        window.refreshCalculations = () => {
-            const entry = document.getElementById('entry-price')?.value || '';
-            const exit = document.getElementById('exit-price')?.value || '';
-            const type = document.getElementById('type-select')?.value || '多';
-            const tp = document.getElementById('tp-price')?.value || '';
-            const sl = document.getElementById('sl-price')?.value || '';
-
-            const res = determineResult(type, entry, exit);
-            const resEl = document.getElementById('result-preview');
-            if (resEl) {
-                resEl.innerText = res;
-                resEl.className = `h5 fw-black ${res === '獲利' ? 'text-danger' : (res === '虧損' ? 'text-success' : 'text-light')}`;
-            }
-
-            const rrEl = document.getElementById('rr-preview');
-            if (rrEl) rrEl.innerText = calculateRR(type, entry, tp, sl) + " R";
-
-            const rank = document.querySelector('input[name="rank"]:checked')?.value;
-            const conds = Array.from(document.querySelectorAll('input[name="conditions"]:checked')).map(e => e.value);
-            const fundamental = document.querySelector('input[name="fundamental"]')?.checked || false;
-            const news = document.querySelector('input[name="news"]')?.checked || false;
-
-            const scoreEl = document.getElementById('score-preview');
-            if (scoreEl) scoreEl.innerText = calculateTradeScore({ rank, conditions: conds, fundamental, news }) + " Pts";
-        };
-
-        let deleteTarget = { market: null, id: null };
-        window.openDeleteModal = (market, id) => {
-            deleteTarget = { market, id };
-            document.getElementById('delete-modal').style.display = 'flex';
-        };
-        window.closeDeleteModal = () => document.getElementById('delete-modal').style.display = 'none';
-        document.getElementById('confirm-delete-btn').addEventListener('click', () => {
-            const { market, id } = deleteTarget;
-            tradingData[market] = tradingData[market].filter(r => r.id !== id);
-            saveData();
-            closeDeleteModal();
-            navigateTo('details', market);
-        });
-
-        window.handleSave = (market, idStr) => {
-            const form = document.getElementById('trading-form');
-            const formData = new FormData(form);
-            const finalId = (idStr && idStr !== '') ? idStr : Date.now().toString();
-
-            const record = {
-                id: finalId,
-                date: formData.get('date'),
-                item: formData.get('item'),
-                type: formData.get('type'),
-                rank: formData.get('rank') || '',
-                entryPrice: formData.get('entryPrice'),
-                units: formData.get('units'),
-                tp: formData.get('tp'),
-                sl: formData.get('sl'),
-                exitPrice: formData.get('exitPrice'),
-                conditions: Array.from(document.querySelectorAll('input[name="conditions"]:checked')).map(e => e.value),
-                fundamental: document.querySelector('input[name="fundamental"]')?.checked || false,
-                news: document.querySelector('input[name="news"]')?.checked || false,
-                reflection: formData.get('reflection'),
-                timestamp: Date.now()
-            };
-
-            const index = tradingData[market].findIndex(r => r.id === finalId);
-            if (index > -1) tradingData[market][index] = record;
-            else tradingData[market].unshift(record);
-
-            saveData();
-            navigateTo('details', market);
-        };
-
         function renderStrategy(container) {
             container.innerHTML = `
                 <div class="page-transition">
                     <button onclick="navigateTo('home')" class="btn btn-link text-secondary mb-4 p-0 fw-black">
                         <i class="fas fa-chevron-left me-2"></i> 返回主頁
                     </button>
-                    
-                    <!-- 連結到外部 HackMD 文件 -->
                     <div class="mb-4">
                         <a href="https://hackmd.io/@1cheng1/SySoXjU6gg" target="_blank" class="btn btn-outline-info fw-bold">
                             <i class="fas fa-external-link-alt me-2"></i> 檢視完整策略說明（HackMD）
                         </a>
                     </div>
-
                     <div class="d-flex align-items-center gap-3 mb-4">
                         <div class="bg-primary text-white p-3 rounded-3xl">
                             <i class="fas fa-scroll h4"></i>
@@ -1147,106 +866,14 @@
                             <p class="text-secondary fw-bold mb-0">四大支柱：從趨勢到技術執行</p>
                         </div>
                     </div>
-                    <div class="row mb-4">
-                        <div class="col-md-6 mb-3">
-                            <div class="bg-dark p-4 rounded-4xl border">
-                                <h3 class="h6 fw-black text-info mb-3">1. 趨勢確認 (Trend)</h3>
-                                <p class="text-secondary">依據大時區 Vegas 通道。價格在通道之上且通道向上為多頭；反之為空頭。</p>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="bg-dark p-4 rounded-4xl border">
-                                <h3 class="h6 fw-black text-info mb-3">2. 基本面加分 (Fundamental)</h3>
-                                <p class="text-secondary">觀察營收與消息面。良好的基本面決定了持倉信心。</p>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="bg-dark p-4 rounded-4xl border">
-                                <h3 class="h6 fw-black text-info mb-3">3. 消息面加分 (News)</h3>
-                                <p class="text-secondary">關注地緣政治或法人籌碼，消息面常是脫離成本區的觸媒。</p>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="bg-dark p-4 rounded-4xl border">
-                                <h3 class="h6 fw-black text-info mb-3">4. 技術執行 (Technical)</h3>
-                                <p class="text-secondary">依據 VP 等級判斷入場，結合 RSI 交叉扣板機。嚴格執行 TP/SL。</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 交易策略表格版 -->
                     <div class="bg-dark p-4 rounded-4xl border mt-4 mb-4">
-                        <h3 class="h6 fw-black text-info mb-3"><i class="fas fa-table me-2"></i>交易策略表格版（7步驟流程）</h3>
-                        <div class="table-responsive">
-                            <table class="table table-dark table-sm mb-0">
-                                <thead>
-                                    <tr class="border-bottom" style="border-color: #475569;">
-                                        <th class="text-info fw-black">步驟</th>
-                                        <th class="text-info fw-black">項目</th>
-                                        <th class="text-info fw-black">多單策略 (Long)</th>
-                                        <th class="text-info fw-black">空單策略 (Short)</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="text-secondary small">
-                                    <tr class="border-bottom" style="border-color: #334155;">
-                                        <td class="fw-bold">1</td>
-                                        <td class="fw-bold">時間框架(4小時與1小時)</td>
-                                        <td>4H 觀察 + 1H 進場（禁止搶進）</td>
-                                        <td>4H 觀察 + 1H 進場（禁止搶進）</td>
-                                    </tr>
-                                    <tr class="border-bottom" style="border-color: #334155;">
-                                        <td class="fw-bold">2</td>
-                                        <td class="fw-bold">趨勢確認(4小時與1小時)</td>
-                                        <td>EMA144 &gt; 233 &gt; 377 &gt; 610 &gt; 987</td>
-                                        <td>EMA144 &lt; 233 &lt; 377 &lt; 610 &lt; 987</td>
-                                    </tr>
-                                    <tr class="border-bottom" style="border-color: #334155;">
-                                        <td class="fw-bold">3</td>
-                                        <td class="fw-bold">VP進場位置(1小時)</td>
-                                        <td>1. VAL 或VAL附近(2單位)<br>2. POC或POC區間(1單位)</td>
-                                        <td>1. VAH 或VAL附近(2單位)<br>2. 或POC或POC區間(1單位)</td>
-                                    </tr>
-                                    <tr class="border-bottom" style="border-color: #334155;">
-                                        <td class="fw-bold">4</td>
-                                        <td class="fw-bold">觸發訊號(1小時)</td>
-                                        <td>RSI(6,12) 黃金交叉 + 4H RSI &lt;70</td>
-                                        <td>RSI(6,12) 死亡交叉 + 4H RSI &gt;30</td>
-                                    </tr>
-                                    <tr class="border-bottom" style="border-color: #334155;">
-                                        <td class="fw-bold">5</td>
-                                        <td class="fw-bold">停損設定(1小時)</td>
-                                        <td>VAL(回踩起點的最低點下方)</td>
-                                        <td>VAH(反彈起點的最高點上方)</td>
-                                    </tr>
-                                    <tr class="border-bottom" style="border-color: #334155;">
-                                        <td class="fw-bold">6</td>
-                                        <td class="fw-bold">停利設定(1小時)</td>
-                                        <td>TP1: POC (出1單位) | TP2: VAH (全出)</td>
-                                        <td>TP1: POC (出1單位) | TP2: VAL (全出)</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold">7</td>
-                                        <td class="fw-bold">加倉機制(1小時)</td>
-                                        <td>首單保本 + 再次出現 1H Vegas 回踩 + RSI 金叉</td>
-                                        <td>首單保本 + 再次出現 1H Vegas 反彈 + RSI 死叉</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="bg-dark p-4 rounded-4xl border mt-4">
                         <h3 class="h6 fw-black text-info mb-3"><i class="fas fa-brain me-2"></i>總體交易心得與觀察</h3>
-                        
-                        <!-- 顯示區（只讀預覽） -->
                         <div class="bg-black bg-opacity-50 border border-secondary rounded-3xl p-4 mb-3">
                             <div class="small text-info fw-bold mb-2 text-uppercase">目前內容預覽</div>
                             <div id="insight-preview" class="text-light" style="white-space: pre-line; line-height: 1.8; min-height: 120px;">
                                 ${(tradingData.generalInsights || '').trim() ? tradingData.generalInsights : '尚未輸入內容...'}
                             </div>
                         </div>
-
-                        <!-- 輸入區（可編輯） -->
                         <textarea id="general-insights-input" class="form-control textarea-large" placeholder="在這裡輸入 / 修改你的心得...記錄您的市場觀察、心法修煉、或是對近期策略執行率的檢討...">${tradingData.generalInsights || ''}</textarea>
                         <div class="mt-3">
                             <button onclick="saveGeneralInsights()" class="btn btn-primary w-100 fw-black py-3 text-uppercase">
@@ -1264,11 +891,8 @@
             if (input) {
                 tradingData.generalInsights = input.value;
                 saveData();
-                
-                // 立即更新預覽區
                 const v = input.value.trim();
                 preview.textContent = v || '尚未輸入內容...';
-                
                 const btn = event.currentTarget;
                 const orig = btn.innerHTML;
                 btn.innerHTML = '<i class="fas fa-check me-2"></i> 心得已儲存';
@@ -1280,70 +904,212 @@
             }
         };
 
-        // 輸入時即時同步預覽
-        window.initInsightPreview = () => {
-            const inputEl = document.getElementById('general-insights-input');
-            const previewEl = document.getElementById('insight-preview');
-            if (!inputEl || !previewEl) return;
-            
-            const syncPreview = () => {
-                const v = inputEl.value.trim();
-                previewEl.textContent = v || '尚未輸入內容...';
-            };
-            
-            inputEl.addEventListener('input', syncPreview);
-        };
+        function renderForm(container, marketType, editId = null) {
+            const isEdit = editId !== null;
+            const editItem = isEdit ? tradingData[marketType].find(item => item.id === editId) : null;
 
-        window.switchInputMethod = (method) => {
-            const autoBox = document.getElementById('auto-lookup-box');
-            const manualBox = document.getElementById('manual-input-box');
-            const autoTab = document.getElementById('tab-auto');
-            const manualTab = document.getElementById('tab-manual');
-            if (method === 'auto') {
-                autoBox.classList.remove('d-none');
-                manualBox.classList.add('d-none');
-                autoTab.classList.add('active');
-                autoTab.classList.remove('inactive');
-                manualTab.classList.remove('active');
-                manualTab.classList.add('inactive');
-            } else {
-                autoBox.classList.add('d-none');
-                manualBox.classList.remove('d-none');
-                autoTab.classList.remove('active');
-                autoTab.classList.add('inactive');
-                manualTab.classList.add('active');
-                manualTab.classList.remove('inactive');
+            const conditions = ['Vegas突破', '雙極限', 'RSI極值', 'MA支撐', '量價配合', '高低點', '缺口填補', 'K線形態'];
+            const stockOptions = Object.entries(stockMap).map(([code, name]) => `<option value="${code}">${code} - ${name}</option>`);
+
+            container.innerHTML = `
+                <div class="page-transition">
+                    <button onclick="navigateTo('details', '${marketType}')" class="btn btn-link text-secondary mb-5 p-0 fw-black">
+                        <i class="fas fa-chevron-left me-2"></i> 返回列表
+                    </button>
+
+                    <h2 class="h2 fw-black text-white mb-5">${isEdit ? '編輯交易紀錄' : '新增交易紀錄'}</h2>
+
+                    <form id="trade-form" class="space-y-4">
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label">日期</label>
+                                <input type="date" id="date" class="form-control" value="${editItem?.date || new Date().toISOString().split('T')[0]}" required>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label">品項</label>
+                                ${marketType === 'stock' ? `
+                                    <select id="item" class="form-control select-control" required>
+                                        <option value="">選擇股票</option>
+                                        ${stockOptions.join('')}
+                                    </select>
+                                ` : `
+                                    <input type="text" id="item" class="form-control" value="${editItem?.item || (marketType === 'gold' ? 'XAUUSD' : 'EURUSD')}" required>
+                                `}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-4">
+                                <label class="form-label">多 / 空</label>
+                                <select id="type" class="form-control select-control" required>
+                                    <option value="多" ${editItem?.type === '多' ? 'selected' : ''}>📈 多單</option>
+                                    <option value="空" ${editItem?.type === '空' ? 'selected' : ''}>📉 空單</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-4">
+                                <label class="form-label">進場價格</label>
+                                <input type="number" id="entryPrice" class="form-control" value="${editItem?.entryPrice || ''}" step="0.01" required>
+                            </div>
+                            <div class="col-md-4 mb-4">
+                                <label class="form-label">出場價格</label>
+                                <input type="number" id="exitPrice" class="form-control" value="${editItem?.exitPrice || ''}" step="0.01">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3 mb-4">
+                                <label class="form-label">單位 / 口數</label>
+                                <input type="number" id="units" class="form-control" value="${editItem?.units || '1'}" step="0.01" required>
+                            </div>
+                            <div class="col-md-3 mb-4">
+                                <label class="form-label">停損位 (SL)</label>
+                                <input type="number" id="sl" class="form-control" value="${editItem?.sl || ''}" step="0.01" required>
+                            </div>
+                            <div class="col-md-3 mb-4">
+                                <label class="form-label">獲利目標 (TP)</label>
+                                <input type="number" id="tp" class="form-control" value="${editItem?.tp || ''}" step="0.01" required>
+                            </div>
+                            <div class="col-md-3 mb-4">
+                                <label class="form-label">預期 R:R</label>
+                                <input type="text" id="expectedRR" class="form-control" value="${editItem ? calculateRR(editItem.type, editItem.entryPrice, editItem.tp, editItem.sl) : '0.0'}" disabled>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-4">
+                                <label class="form-label">單位評級</label>
+                                <select id="rank" class="form-control select-control">
+                                    <option value="無" ${editItem?.rank === '無' ? 'selected' : ''}>無</option>
+                                    <option value="銅單" ${editItem?.rank === '銅單' ? 'selected' : ''}>銅單</option>
+                                    <option value="銀單" ${editItem?.rank === '銀單' ? 'selected' : ''}>銀單</option>
+                                    <option value="金單" ${editItem?.rank === '金單' ? 'selected' : ''}>金單</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8 mb-4">
+                                <label class="form-label">進場條件（複選）</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    ${conditions.map(c => `
+                                        <label class="d-flex align-items-center gap-2 mb-2">
+                                            <input type="checkbox" class="checkbox-input condition-check" value="${c}" ${editItem?.conditions?.includes(c) ? 'checked' : ''}>
+                                            <span class="text-secondary small">${c}</span>
+                                        </label>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label class="d-flex align-items-center gap-2">
+                                    <input type="checkbox" id="fundamental" class="checkbox-input" ${editItem?.fundamental ? 'checked' : ''}>
+                                    <span class="form-label mb-0">基本面確認</span>
+                                </label>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="d-flex align-items-center gap-2">
+                                    <input type="checkbox" id="news" class="checkbox-input" ${editItem?.news ? 'checked' : ''}>
+                                    <span class="form-label mb-0">消息面加分</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">進場反思 & 回測</label>
+                            <textarea id="reflection" class="form-control textarea-large" placeholder="記錄進場邏輯、市場環境、執行過程與後續改進方向...">${editItem?.reflection || ''}</textarea>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn-primary-custom flex-grow-1">
+                                <i class="fas fa-save me-2"></i> ${isEdit ? '更新紀錄' : '新增紀錄'}
+                            </button>
+                            <button type="button" onclick="navigateTo('details', '${marketType}')" class="btn btn-secondary px-5">取消</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.getElementById('trade-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const conditions = Array.from(document.querySelectorAll('.condition-check:checked')).map(el => el.value);
+
+                const newRecord = {
+                    id: editItem?.id || generateId(),
+                    date: document.getElementById('date').value,
+                    item: document.getElementById('item').value,
+                    type: document.getElementById('type').value,
+                    entryPrice: document.getElementById('entryPrice').value,
+                    exitPrice: document.getElementById('exitPrice').value,
+                    units: document.getElementById('units').value,
+                    sl: document.getElementById('sl').value,
+                    tp: document.getElementById('tp').value,
+                    rank: document.getElementById('rank').value,
+                    conditions: conditions,
+                    fundamental: document.getElementById('fundamental').checked,
+                    news: document.getElementById('news').checked,
+                    reflection: document.getElementById('reflection').value
+                };
+
+                if (isEdit) {
+                    const index = tradingData[marketType].findIndex(item => item.id === editId);
+                    tradingData[marketType][index] = newRecord;
+                } else {
+                    tradingData[marketType].push(newRecord);
+                }
+
+                saveData();
+                alert(isEdit ? '交易紀錄已更新！' : '新交易紀錄已新增！');
+                navigateTo('details', marketType);
+            });
+
+            document.getElementById('entryPrice').addEventListener('change', () => {
+                const type = document.getElementById('type').value;
+                const entry = document.getElementById('entryPrice').value;
+                const tp = document.getElementById('tp').value;
+                const sl = document.getElementById('sl').value;
+                document.getElementById('expectedRR').value = calculateRR(type, entry, tp, sl);
+            });
+            document.getElementById('tp').addEventListener('change', () => {
+                const type = document.getElementById('type').value;
+                const entry = document.getElementById('entryPrice').value;
+                const tp = document.getElementById('tp').value;
+                const sl = document.getElementById('sl').value;
+                document.getElementById('expectedRR').value = calculateRR(type, entry, tp, sl);
+            });
+            document.getElementById('sl').addEventListener('change', () => {
+                const type = document.getElementById('type').value;
+                const entry = document.getElementById('entryPrice').value;
+                const tp = document.getElementById('tp').value;
+                const sl = document.getElementById('sl').value;
+                document.getElementById('expectedRR').value = calculateRR(type, entry, tp, sl);
+            });
+
+            if (marketType === 'stock') {
+                document.getElementById('item').value = editItem?.item || '';
             }
+        }
+
+        window.openDeleteModal = (marketType, id) => {
+            window.deleteTarget = { marketType, id };
+            document.getElementById('delete-modal').style.display = 'flex';
         };
 
-        window.lookupStockId = (id) => {
-            const display = document.getElementById('auto-lookup-result');
-            const hiddenInput = document.getElementById('item-hidden-input');
-            if (stockMap[id]) {
-                display.innerText = `找到標的：${stockMap[id]}`;
-                display.className = "mt-2 small text-info fw-bold";
-                hiddenInput.value = `${stockMap[id]} ${id}`;
-            } else {
-                display.innerText = id.length >= 4 ? "查無代號，請使用手動輸入" : "請輸入 4 碼代號";
-                display.className = "mt-2 small text-secondary fw-bold";
-                hiddenInput.value = "";
+        window.closeDeleteModal = () => {
+            document.getElementById('delete-modal').style.display = 'none';
+            window.deleteTarget = null;
+        };
+
+        document.getElementById('confirm-delete-btn').addEventListener('click', () => {
+            if (window.deleteTarget) {
+                const { marketType, id } = window.deleteTarget;
+                tradingData[marketType] = tradingData[marketType].filter(item => item.id !== id);
+                saveData();
+                closeDeleteModal();
+                renderDetails(document.getElementById('app-container'), marketType, window.currentFilter);
             }
-        };
+        });
 
-        window.onload = () => {
-            navigateTo('home');
-            // 延遲初始化以確保 DOM 已準備就緒
-            setTimeout(() => initInsightPreview(), 100);
-        };
-
-        // 當導航到 strategy 頁面時，重新初始化預覽同步
-        const originalNavigateTo = window.navigateTo;
-        window.navigateTo = (page, params = null) => {
-            originalNavigateTo(page, params);
-            if (page === 'strategy') {
-                setTimeout(() => initInsightPreview(), 100);
-            }
-        };
+        navigateTo('home');
     </script>
 </body>
 </html>
