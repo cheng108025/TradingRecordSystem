@@ -41,7 +41,7 @@
             background: linear-gradient(135deg, #78350f 0%, #b45309 100%);
             border: 1px solid rgba(255,255,255,0.1) !important;
         }
-        .card-euro { 
+        .card-forex { 
             background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
             border: 1px solid rgba(255,255,255,0.1) !important;
         }
@@ -401,19 +401,19 @@
         const initialData = {
             stock: [],
             gold: [],
-            euro: [],
+            forex: [],
             generalInsights: ''
         };
 
         let tradingData = JSON.parse(localStorage.getItem(STORAGE_KEY));
         const initMarker = localStorage.getItem(STORAGE_KEY + '_initialized');
 
-        if (!tradingData || !initMarker || (tradingData.stock.length === 0 && tradingData.gold.length === 0 && tradingData.euro.length === 0)) {
+        if (!tradingData || !initMarker || (tradingData.stock.length === 0 && tradingData.gold.length === 0 && (!tradingData.forex || tradingData.forex.length === 0))) {
             tradingData = initialData;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(tradingData));
             localStorage.setItem(STORAGE_KEY + '_initialized', 'true');
-        } else if (!tradingData.euro) {
-            tradingData.euro = [];
+        } else if (!tradingData.forex) {
+            tradingData.forex = [];
             localStorage.setItem(STORAGE_KEY, JSON.stringify(tradingData));
         }
 
@@ -449,7 +449,7 @@
                     tradingData = {
                         stock: obj.stock,
                         gold: obj.gold,
-                        euro: obj.euro || [],
+                        forex: obj.forex || obj.euro || [],
                         generalInsights: obj.generalInsights || ''
                     };
                     saveData();
@@ -507,32 +507,23 @@
             if (marketType === 'gold') {
                 const units = parseFloat(record.units || '0.01');
                 const diff = (record.type === '多') ? (x - e) : (e - x);
-                // 黃金：0.01手1點 = 1USD（係數100）
                 const grossPnL = diff * 100 * units;
-                // 手續費（按單位比例）0.03 × (單位 / 0.01) × 2
                 const commissionFee = 0.03 * (units / 0.01) * 2;
                 return grossPnL - commissionFee;
-            } else if (marketType === 'euro') {
+            } else if (marketType === 'forex') {
                 const units = parseFloat(record.units || '0.01');
                 const diff = (record.type === '多') ? (x - e) : (e - x);
-                // 歐元：0.01手1點 = 1USD（係數10000）
+                // 外匯通常係數為 10000
                 const grossPnL = diff * 10000 * units;
-                // 手續費（按單位比例）0.03 × (單位 / 0.01) × 2
                 const commissionFee = 0.03 * (units / 0.01) * 2;
                 return grossPnL - commissionFee;
             } else {
                 const units = parseFloat(record.units || '1');
                 const diff = (record.type === '多') ? (x - e) : (e - x);
-                
-                // 手續費（買進 + 賣出）
                 const commissionFee = (e * units * 1000 * 0.001425) + (x * units * 1000 * 0.001425);
-                
-                // 證交稅（只在賣出時扣，0.3%）
-                // 多單：賣出時扣；空單：買進時扣
                 const stockTax = record.type === '多' 
-                    ? (x * units * 1000 * 0.003)  // 多單賣出時扣
-                    : (e * units * 1000 * 0.003); // 空單買進時扣
-                
+                    ? (x * units * 1000 * 0.003) 
+                    : (e * units * 1000 * 0.003); 
                 return (diff * 1000 * units) - commissionFee - stockTax;
             }
         }
@@ -586,7 +577,7 @@
                             </div>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <div class="card card-euro card-hover rounded-4xl p-5 text-white h-100" onclick="navigateTo('details', 'euro')" style="cursor: pointer;">
+                            <div class="card card-forex card-hover rounded-4xl p-5 text-white h-100" onclick="navigateTo('details', 'forex')" style="cursor: pointer;">
                                 <i class="fas fa-euro-sign mb-4" style="font-size: 3.75rem;"></i>
                                 <h3 class="h4 fw-black">外匯市場紀錄</h3>
                                 <p class="mb-0 fw-bold" style="opacity: 0.8;">Forex Records</p>
@@ -635,19 +626,17 @@
                 totalPnL += calculatePnL(d, marketType);
             });
 
-            // --- 第一階段：依據「狀態」篩選資料 ---
             let statusFilteredData = data;
             if (filter === '未結單') statusFilteredData = data.filter(d => !d.exitPrice || d.exitPrice.toString().trim() === "");
             else if (filter === '獲利單') statusFilteredData = data.filter(d => d.exitPrice && determineResult(d.type, d.entryPrice, d.exitPrice) === '獲利');
             else if (filter === '虧損單') statusFilteredData = data.filter(d => d.exitPrice && determineResult(d.type, d.entryPrice, d.exitPrice) === '虧損');
             
-            // --- 第二階段：依據「單別」篩選最終顯示資料 ---
             let finalDisplayData = statusFilteredData;
             if (sort === 'long') finalDisplayData = statusFilteredData.filter(d => d.type === '多');
             else if (sort === 'short') finalDisplayData = statusFilteredData.filter(d => d.type === '空');
 
-            const pnlUnit = (marketType === 'gold' || marketType === 'euro') ? 'USD' : 'TWD';
-            const marketLabel = marketType === 'gold' ? '黃金 XAUUSD' : (marketType === 'euro' ? '外匯市場' : '台股市場');
+            const pnlUnit = (marketType === 'gold' || marketType === 'forex') ? 'USD' : 'TWD';
+            const marketLabel = marketType === 'gold' ? '黃金 XAUUSD' : (marketType === 'forex' ? '外匯市場' : '台股市場');
 
             container.innerHTML = `
                 <div class="page-transition">
@@ -664,7 +653,6 @@
                     </div>
 
                     <div class="row mb-4">
-                        <!-- 統計區塊保持不變 -->
                         <div class="col-sm-6 col-md-3 mb-3">
                             <div class="stat-box">
                                 <div class="stat-label">整體勝率統計</div>
@@ -810,7 +798,7 @@
                                 <div class="row gap-4 mb-3">
                                     <div class="col text-center">
                                         <p class="small text-secondary fw-bold mb-1 text-uppercase">進場 / 單位</p>
-                                        <p class="font-monospace fw-black text-light">${item.entryPrice} / ${item.units} ${(marketType === 'gold' || marketType === 'euro') ? '手' : '張'}</p>
+                                        <p class="font-monospace fw-black text-light">${item.entryPrice} / ${item.units} ${(marketType === 'gold' || marketType === 'forex') ? '手' : '張'}</p>
                                     </div>
                                     <div class="col text-center">
                                         <p class="small text-secondary fw-bold mb-1 text-uppercase">出場價格</p>
@@ -847,17 +835,17 @@
 
         function renderForm(container, marketType, id = undefined) {
             const isEdit = typeof id === 'string' && id !== '';
-            const isGoldOrEuro = marketType === 'gold' || marketType === 'euro';
+            const isSpecialMarket = marketType === 'gold' || marketType === 'forex';
             let record = isEdit
                 ? tradingData[marketType].find(r => r.id === id)
                 : {
                     id: Date.now().toString(),
                     date: new Date().toISOString().split('T')[0],
-                    item: isGoldOrEuro ? (marketType === 'gold' ? '黃金 XAUUSD' : '歐元 EURUSD') : '',
+                    item: marketType === 'gold' ? '黃金 XAUUSD' : (marketType === 'forex' ? '' : ''),
                     type: '多',
                     rank: '',
                     entryPrice: '',
-                    units: isGoldOrEuro ? '0.01' : '1',
+                    units: isSpecialMarket ? '0.01' : '1',
                     tp: '',
                     sl: '',
                     exitPrice: '',
@@ -874,7 +862,7 @@
                     </button>
                     <div class="bg-dark border rounded-4xl overflow-hidden">
                         <div class="bg-secondary bg-opacity-25 px-5 py-4 border-bottom text-center">
-                            <h2 class="h4 fw-black text-white mb-0">${isEdit ? '編輯' : '新增'} ${isGoldOrEuro ? (marketType === 'gold' ? '黃金' : '外匯') : '台股'} 紀錄</h2>
+                            <h2 class="h4 fw-black text-white mb-0">${isEdit ? '編輯' : '新增'} ${marketType === 'gold' ? '黃金' : (marketType === 'forex' ? '外匯' : '台股')} 紀錄</h2>
                         </div>
                         <form id="trading-form" class="p-5">
                             <div class="row mb-4">
@@ -946,8 +934,8 @@
                                 <h3 class="h6 fw-black text-info mb-3 border-bottom pb-2 text-uppercase">數據分析</h3>
                                 <div class="row align-items-end">
                                     <div class="col-md-3 mb-3">
-                                        <label class="form-label">單位 <span class="text-secondary small">(${isGoldOrEuro ? '手' : '張'})</span></label>
-                                        <input type="text" name="units" value="${record.units}" class="form-control" placeholder="${isGoldOrEuro ? '0.01 手' : '1 張'}">
+                                        <label class="form-label">單位 <span class="text-secondary small">(${marketType === 'stock' ? '張' : '手'})</span></label>
+                                        <input type="text" name="units" value="${record.units}" class="form-control" placeholder="${isSpecialMarket ? '0.01 手' : '1 張'}">
                                     </div>
                                     <div class="col-md-3 mb-3">
                                         <label class="form-label">進場價格</label>
@@ -1134,7 +1122,6 @@
                         <i class="fas fa-chevron-left me-2"></i> 返回主頁
                     </button>
                     
-                    <!-- 連結到外部 HackMD 文件 -->
                     <div class="mb-4">
                         <a href="https://hackmd.io/@1cheng1/SySoXjU6gg" target="_blank" class="btn btn-outline-info fw-bold">
                             <i class="fas fa-external-link-alt me-2"></i> 檢視完整策略說明（HackMD）
@@ -1177,7 +1164,6 @@
                         </div>
                     </div>
 
-                    <!-- 交易策略表格版 -->
                     <div class="bg-dark p-4 rounded-4xl border mt-4 mb-4">
                         <h3 class="h6 fw-black text-info mb-3"><i class="fas fa-table me-2"></i>交易策略表格版（7步驟流程）</h3>
                         <div class="table-responsive">
@@ -1240,16 +1226,12 @@
 
                     <div class="bg-dark p-4 rounded-4xl border mt-4">
                         <h3 class="h6 fw-black text-info mb-3"><i class="fas fa-brain me-2"></i>總體交易心得與觀察</h3>
-                        
-                        <!-- 顯示區（只讀預覽） -->
                         <div class="bg-black bg-opacity-50 border border-secondary rounded-3xl p-4 mb-3">
                             <div class="small text-info fw-bold mb-2 text-uppercase">目前內容預覽</div>
                             <div id="insight-preview" class="text-light" style="white-space: pre-line; line-height: 1.8; min-height: 120px;">
                                 ${(tradingData.generalInsights || '').trim() ? tradingData.generalInsights : '尚未輸入內容...'}
                             </div>
                         </div>
-
-                        <!-- 輸入區（可編輯） -->
                         <textarea id="general-insights-input" class="form-control textarea-large" placeholder="在這裡輸入 / 修改你的心得...記錄您的市場觀察、心法修煉、或是對近期策略執行率的檢討...">${tradingData.generalInsights || ''}</textarea>
                         <div class="mt-3">
                             <button onclick="saveGeneralInsights()" class="btn btn-primary w-100 fw-black py-3 text-uppercase">
@@ -1267,11 +1249,8 @@
             if (input) {
                 tradingData.generalInsights = input.value;
                 saveData();
-                
-                // 立即更新預覽區
                 const v = input.value.trim();
                 preview.textContent = v || '尚未輸入內容...';
-                
                 const btn = event.currentTarget;
                 const orig = btn.innerHTML;
                 btn.innerHTML = '<i class="fas fa-check me-2"></i> 心得已儲存';
@@ -1283,17 +1262,14 @@
             }
         };
 
-        // 輸入時即時同步預覽
         window.initInsightPreview = () => {
             const inputEl = document.getElementById('general-insights-input');
             const previewEl = document.getElementById('insight-preview');
             if (!inputEl || !previewEl) return;
-            
             const syncPreview = () => {
                 const v = inputEl.value.trim();
                 previewEl.textContent = v || '尚未輸入內容...';
             };
-            
             inputEl.addEventListener('input', syncPreview);
         };
 
@@ -1335,11 +1311,9 @@
 
         window.onload = () => {
             navigateTo('home');
-            // 延遲初始化以確保 DOM 已準備就緒
             setTimeout(() => initInsightPreview(), 100);
         };
 
-        // 當導航到 strategy 頁面時，重新初始化預覽同步
         const originalNavigateTo = window.navigateTo;
         window.navigateTo = (page, params = null) => {
             originalNavigateTo(page, params);
