@@ -507,16 +507,16 @@
             if (marketType === 'gold') {
                 const units = parseFloat(record.units || '0.01');
                 const diff = (record.type === '多') ? (x - e) : (e - x);
-                // 原始利潤（乘以 1000）
-                const grossPnL = diff * 1000 * units;
+                // 黃金：0.01手1點 = 1USD（係數100）
+                const grossPnL = diff * 100 * units;
                 // 手續費（按單位比例）0.03 × (單位 / 0.01) × 2
                 const commissionFee = 0.03 * (units / 0.01) * 2;
                 return grossPnL - commissionFee;
             } else if (marketType === 'euro') {
                 const units = parseFloat(record.units || '0.01');
                 const diff = (record.type === '多') ? (x - e) : (e - x);
-                // 原始利潤（乘以 1000）
-                const grossPnL = diff * 1000 * units;
+                // 歐元：0.01手1點 = 1USD（係數10000）
+                const grossPnL = diff * 10000 * units;
                 // 手續費（按單位比例）0.03 × (單位 / 0.01) × 2
                 const commissionFee = 0.03 * (units / 0.01) * 2;
                 return grossPnL - commissionFee;
