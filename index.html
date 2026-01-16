@@ -588,8 +588,8 @@
                         <div class="col-md-3 mb-3">
                             <div class="card card-euro card-hover rounded-4xl p-5 text-white h-100" onclick="navigateTo('details', 'euro')" style="cursor: pointer;">
                                 <i class="fas fa-euro-sign mb-4" style="font-size: 3.75rem;"></i>
-                                <h3 class="h4 fw-black">歐元市場紀錄</h3>
-                                <p class="mb-0 fw-bold" style="opacity: 0.8;">EURUSD Records</p>
+                                <h3 class="h4 fw-black">外匯市場紀錄</h3>
+                                <p class="mb-0 fw-bold" style="opacity: 0.8;">Forex Records</p>
                             </div>
                         </div>
                         <div class="col-md-3 mb-3">
@@ -604,7 +604,7 @@
                     <div class="bg-dark border rounded-4xl p-4 d-flex flex-column flex-md-row justify-content-between gap-3 align-items-center">
                         <div class="flex-grow-1 text-secondary small">
                             <div class="fw-black text-light mb-1">交易紀錄備份與還原</div>
-                            <div>匯出目前所有台股 / 黃金 / 歐元 / 心得紀錄為 JSON 檔，日後可在其他瀏覽器匯入還原。</div>
+                            <div>匯出目前所有台股 / 黃金 / 外匯 / 心得紀錄為 JSON 檔，日後可在其他瀏覽器匯入還原。</div>
                         </div>
                         <div class="d-flex gap-2">
                             <button type="button" onclick="exportTradingData()" class="btn btn-success fw-bold">
@@ -647,7 +647,7 @@
             else if (sort === 'short') finalDisplayData = statusFilteredData.filter(d => d.type === '空');
 
             const pnlUnit = (marketType === 'gold' || marketType === 'euro') ? 'USD' : 'TWD';
-            const marketLabel = marketType === 'gold' ? '黃金 XAUUSD' : (marketType === 'euro' ? '歐元 EURUSD' : '台股市場');
+            const marketLabel = marketType === 'gold' ? '黃金 XAUUSD' : (marketType === 'euro' ? '外匯市場' : '台股市場');
 
             container.innerHTML = `
                 <div class="page-transition">
@@ -845,7 +845,6 @@
             `;
         }
 
-        // 剩餘的函數（renderForm, handleSave, renderStrategy 等）保持不變
         function renderForm(container, marketType, id = undefined) {
             const isEdit = typeof id === 'string' && id !== '';
             const isGoldOrEuro = marketType === 'gold' || marketType === 'euro';
@@ -875,7 +874,7 @@
                     </button>
                     <div class="bg-dark border rounded-4xl overflow-hidden">
                         <div class="bg-secondary bg-opacity-25 px-5 py-4 border-bottom text-center">
-                            <h2 class="h4 fw-black text-white mb-0">${isEdit ? '編輯' : '新增'} ${isGoldOrEuro ? (marketType === 'gold' ? '黃金' : '歐元') : '台股'} 紀錄</h2>
+                            <h2 class="h4 fw-black text-white mb-0">${isEdit ? '編輯' : '新增'} ${isGoldOrEuro ? (marketType === 'gold' ? '黃金' : '外匯') : '台股'} 紀錄</h2>
                         </div>
                         <form id="trading-form" class="p-5">
                             <div class="row mb-4">
@@ -886,7 +885,7 @@
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">交易標的</label>
                                     ${
-                                        !isGoldOrEuro
+                                        marketType === 'stock'
                                         ? `
                                         <div class="d-flex gap-2 mb-2">
                                             <button type="button" id="tab-auto" class="input-tab active" onclick="switchInputMethod('auto')">自動輸入</button>
@@ -901,8 +900,7 @@
                                             <input type="text" class="form-control" placeholder="手動標的名稱" value="${record.item}" oninput="document.getElementById('item-hidden-input').value = this.value">
                                         </div>`
                                         : `
-                                        <input type="text" value="${marketType === 'gold' ? '黃金 XAUUSD' : '歐元 EURUSD'}" class="form-control" readonly>
-                                        <input type="hidden" name="item" value="${marketType === 'gold' ? '黃金 XAUUSD' : '歐元 EURUSD'}">
+                                        <input type="text" name="item" value="${record.item}" class="form-control" placeholder="輸入交易標號（例如：XAUUSD 或 BTCUSD）" required>
                                         `
                                     }
                                 </div>
