@@ -888,7 +888,7 @@
                                             <input type="text" class="form-control" placeholder="手動標的名稱" value="${record.item}" oninput="document.getElementById('item-hidden-input').value = this.value">
                                         </div>`
                                         : `
-                                        <input type="text" name="item" value="${record.item}" class="form-control" placeholder="輸入交易標的物名稱（歐元、韓元、日元）" required>
+                                        <input type="text" name="item" value="${record.item}" class="form-control" placeholder="輸入交易標號（例如：XAUUSD 或 BTCUSD）" required>
                                         `
                                     }
                                 </div>
@@ -1128,6 +1128,13 @@
                         </a>
                     </div>
 
+                     <div class="mb-4">
+                        <a href="https://hackmd.io/@1cheng1/SJlC7_orWl" target="_blank" class="btn btn-outline-info fw-bold">
+                            <i class="fas fa-external-link-alt me-2"></i> 黃金、外匯基本面查詢（HackMD）
+                        </a>
+                    </div>
+
+
                     <div class="d-flex align-items-center gap-3 mb-4">
                         <div class="bg-primary text-white p-3 rounded-3xl">
                             <i class="fas fa-scroll h4"></i>
@@ -1324,4 +1331,3 @@
     </script>
 </body>
 </html>
-
