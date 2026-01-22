@@ -511,12 +511,7 @@
                 const commissionFee = 0.03 * (units / 0.01) * 2;
                 return grossPnL - commissionFee;
             } else if (marketType === 'forex') {
-                const units = parseFloat(record.units || '0.01');
-                const diff = (record.type === '多') ? (x - e) : (e - x);
-                // 外匯通常係數為 10000
-                const grossPnL = diff * 10000 * units;
-                const commissionFee = 0.03 * (units / 0.01) * 2;
-                return grossPnL - commissionFee;
+                return 0;
             } else {
                 const units = parseFloat(record.units || '1');
                 const diff = (record.type === '多') ? (x - e) : (e - x);
